@@ -16,12 +16,12 @@ services:
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_MODEL=llama3.1:8b
-      - DB_PATH=/data/logbook.sqlite
+      - DB_PATH=/data/db/logbook.sqlite
       - WHISPER_MODEL=small
       - WHISPER_DEVICE=cuda
       - WHISPER_COMPUTE=float16
     volumes:
-      - ./data:/data
+      - /mnt/data/yard-assistant:/data
     ports:
       - "8000:8000"
     depends_on:
