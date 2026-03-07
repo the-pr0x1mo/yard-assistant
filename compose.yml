@@ -1,0 +1,43 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    gpus: all
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+
+  assistant-api:
+    build: ./assistant-api
+    container_name: assistant-api
+    gpus: all
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.1:8b
+      - DB_PATH=/data/logbook.sqlite
+      - WHISPER_MODEL=small
+      - WHISPER_DEVICE=cuda
+      - WHISPER_COMPUTE=float16
+    volumes:
+      - ./data:/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  assistant-ui:
+    image: nginx:alpine
+    container_name: assistant-ui
+    volumes:
+      - ./assistant-ui:/usr/share/nginx/html:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - assistant-api
+    restart: unless-stopped
+
+volumes:
+  ollama:

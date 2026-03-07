@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Yard Assistant MVP</title>
+</head>
+<body>
+  <h2>Yard Assistant (MVP)</h2>
+  <p>Record voice → transcribe → extract → save to SQLite → show preview.</p>
+
+  <button id="rec">Start Recording</button>
+  <button id="stop" disabled>Stop</button>
+  <pre id="out"></pre>
+
+<script>
+let mediaRecorder, chunks = [];
+
+const recBtn = document.getElementById("rec");
+const stopBtn = document.getElementById("stop");
+const out = document.getElementById("out");
+
+// IMPORTANT: if you open UI on phone via Tailscale, API is same host, port 8000.
+// const API_URL = `${location.protocol}//${location.hostname}:8000/api/voice`;
+const API_URL = `/api/voice`;
+recBtn.onclick = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaRecorder = new MediaRecorder(stream);
+  chunks = [];
+  mediaRecorder.ondataavailable = e => chunks.push(e.data);
+  mediaRecorder.onstop = async () => {
+    const blob = new Blob(chunks, { type: "audio/webm" });
+    const fd = new FormData();
+    fd.append("file", blob, "voice.webm");
+
+    out.textContent = "Uploading & processing...\n";
+    const res = await fetch(API_URL, { method: "POST", body: fd });
+    const json = await res.json();
+    out.textContent = JSON.stringify(json, null, 2);
+  };
+  mediaRecorder.start();
+  recBtn.disabled = true;
+  stopBtn.disabled = false;
+};
+
+stopBtn.onclick = () => {
+  mediaRecorder.stop();
+  recBtn.disabled = false;
+  stopBtn.disabled = true;
+};
+</script>
+</body>
+</html>
