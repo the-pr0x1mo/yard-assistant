@@ -129,6 +129,13 @@ th {
   gap: 0.7rem;
 }
 
+.record-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.6rem 0;
+}
+
 input[type="file"],
 button {
   font: inherit;

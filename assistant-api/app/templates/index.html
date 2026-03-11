@@ -38,4 +38,121 @@
     <li><code>POST /api/voice</code></li>
   </ul>
 </section>
+
+<section class="card">
+  <h2>Record Log Entry</h2>
+  <p>Record from your browser microphone and send directly to <code>/api/voice</code>.</p>
+  <div class="record-controls">
+    <button id="record-start" type="button">Start recording</button>
+    <button id="record-stop" type="button" disabled>Stop</button>
+    <button id="record-send" type="button" disabled>Send to API</button>
+  </div>
+  <p id="record-status" class="muted">Idle</p>
+  <details id="record-result-wrap">
+    <summary>API response</summary>
+    <pre id="record-result"></pre>
+  </details>
+</section>
+
+<script>
+  (() => {
+    const startBtn = document.getElementById("record-start");
+    const stopBtn = document.getElementById("record-stop");
+    const sendBtn = document.getElementById("record-send");
+    const statusEl = document.getElementById("record-status");
+    const resultEl = document.getElementById("record-result");
+    const resultWrap = document.getElementById("record-result-wrap");
+
+    let mediaRecorder = null;
+    let stream = null;
+    let recordedChunks = [];
+    let recordedBlob = null;
+
+    function setStatus(message) {
+      statusEl.textContent = message;
+    }
+
+    function resetResult() {
+      resultEl.textContent = "";
+      resultWrap.open = false;
+    }
+
+    startBtn.addEventListener("click", async () => {
+      resetResult();
+      recordedChunks = [];
+      recordedBlob = null;
+      sendBtn.disabled = true;
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            recordedChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          recordedBlob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+          sendBtn.disabled = recordedBlob.size === 0;
+          setStatus(recordedBlob.size > 0 ? "Recording ready to send." : "No audio captured.");
+          if (stream) {
+            stream.getTracks().forEach((track) => track.stop());
+            stream = null;
+          }
+        };
+
+        mediaRecorder.start();
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        setStatus("Recording...");
+      } catch (err) {
+        setStatus("Microphone access failed.");
+      }
+    });
+
+    stopBtn.addEventListener("click", () => {
+      if (!mediaRecorder) return;
+      mediaRecorder.stop();
+      stopBtn.disabled = true;
+      startBtn.disabled = false;
+      setStatus("Processing recording...");
+    });
+
+    sendBtn.addEventListener("click", async () => {
+      if (!recordedBlob) return;
+      setStatus("Uploading...");
+      sendBtn.disabled = true;
+      resetResult();
+
+      try {
+        const ext = recordedBlob.type.includes("ogg") ? "ogg" : "webm";
+        const formData = new FormData();
+        formData.append("file", recordedBlob, `recording.${ext}`);
+
+        const response = await fetch("/api/voice", {
+          method: "POST",
+          body: formData
+        });
+
+        const text = await response.text();
+        let pretty = text;
+        try {
+          pretty = JSON.stringify(JSON.parse(text), null, 2);
+        } catch (_) {
+          // Keep raw text if response is not JSON.
+        }
+
+        resultEl.textContent = pretty;
+        resultWrap.open = true;
+        setStatus(response.ok ? "Done." : `API error (${response.status}).`);
+      } catch (err) {
+        setStatus("Upload failed.");
+      } finally {
+        sendBtn.disabled = false;
+      }
+    });
+  })();
+</script>
 {% endblock %}
