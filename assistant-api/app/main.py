@@ -2,7 +2,9 @@ import os
 import tempfile
 from typing import Optional
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from faster_whisper import WhisperModel
 
 from app.db import db_init, save_normalized_entry, save_raw_hive_log
@@ -12,13 +14,22 @@ from app.services import build_legacy_preview, ollama_extract, utc_now_sql
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")  # base/small for CPU MVP
 WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cpu")
 WHISPER_COMPUTE = os.getenv("WHISPER_COMPUTE", "int8")
+BASE_DIR = os.path.dirname(__file__)
 
 
 # App bootstrap
 app = FastAPI(title="Yard Assistant MVP")
 whisper = WhisperModel(WHISPER_MODEL, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE)
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 db_init()
+
+
+# Web routes
+@app.get("/")
+def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 # API routes

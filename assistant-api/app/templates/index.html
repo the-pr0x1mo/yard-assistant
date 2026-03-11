@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Home | Yard Assistant{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>Welcome</h2>
+  <p>
+    This app transcribes hive inspection audio and stores both raw notes and structured
+    beekeeping data in SQLite.
+  </p>
+</section>
+
+<section class="card">
+  <h2>Available Endpoints</h2>
+  <ul>
+    <li><code>GET /health</code> - health check</li>
+    <li><code>POST /voice</code> - upload audio for transcription + extraction</li>
+    <li><code>POST /api/voice</code> - same as <code>/voice</code></li>
+  </ul>
+</section>
+{% endblock %}
