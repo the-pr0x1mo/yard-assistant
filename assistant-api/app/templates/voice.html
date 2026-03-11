@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Voice | Yard Assistant{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>Upload Voice Note</h2>
+  <p>
+    This form posts audio to <code>POST /api/voice</code> and returns the same JSON response
+    as the API.
+  </p>
+</section>
+
+<section class="card">
+  <form action="/api/voice" method="post" enctype="multipart/form-data" class="form-stack">
+    <label for="file">Audio file</label>
+    <input id="file" name="file" type="file" accept="audio/*" required>
+    <button type="submit">Upload and process</button>
+  </form>
+</section>
+{% endblock %}

@@ -7,7 +7,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from faster_whisper import WhisperModel
 
-from app.db import db_init, save_normalized_entry, save_raw_hive_log
+from app.db import (
+    db_init,
+    get_hive,
+    list_hive_inspections,
+    list_hives,
+    list_recent_inspections,
+    list_recent_logs,
+    save_normalized_entry,
+    save_raw_hive_log,
+)
 from app.services import build_legacy_preview, ollama_extract, utc_now_sql
 
 # Configuration
@@ -30,6 +39,39 @@ db_init()
 @app.get("/")
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/hives")
+def hives_page(request: Request):
+    hives = list_hives()
+    return templates.TemplateResponse("hives.html", {"request": request, "hives": hives})
+
+
+@app.get("/hives/{hive_id}")
+def hive_detail_page(request: Request, hive_id: str):
+    hive = get_hive(hive_id)
+    inspections = list_hive_inspections(hive_id)
+    return templates.TemplateResponse(
+        "hive_detail.html",
+        {"request": request, "hive": hive, "hive_id": hive_id, "inspections": inspections},
+    )
+
+
+@app.get("/inspections")
+def inspections_page(request: Request):
+    inspections = list_recent_inspections()
+    return templates.TemplateResponse("inspections.html", {"request": request, "inspections": inspections})
+
+
+@app.get("/transcripts")
+def transcripts_page(request: Request):
+    logs = list_recent_logs()
+    return templates.TemplateResponse("transcripts.html", {"request": request, "logs": logs})
+
+
+@app.get("/voice")
+def voice_page(request: Request):
+    return templates.TemplateResponse("voice.html", {"request": request})
 
 
 # API routes

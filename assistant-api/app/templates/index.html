@@ -6,17 +6,36 @@
 <section class="card">
   <h2>Welcome</h2>
   <p>
-    This app transcribes hive inspection audio and stores both raw notes and structured
-    beekeeping data in SQLite.
+    This app transcribes hive inspection audio and stores both raw transcript logs and
+    structured inspection data in SQLite.
   </p>
 </section>
 
+<section class="grid-two">
+  <a class="card link-card" href="/voice">
+    <h3>Voice</h3>
+    <p>Upload inspection audio to the existing ingestion pipeline.</p>
+  </a>
+  <a class="card link-card" href="/hives">
+    <h3>Hives</h3>
+    <p>Browse hives and open details with recent inspections.</p>
+  </a>
+  <a class="card link-card" href="/inspections">
+    <h3>Inspections</h3>
+    <p>Review the latest normalized inspection entries.</p>
+  </a>
+  <a class="card link-card" href="/transcripts">
+    <h3>Transcripts</h3>
+    <p>Inspect recent raw audit records from <code>hive_logs</code>.</p>
+  </a>
+</section>
+
 <section class="card">
-  <h2>Available Endpoints</h2>
+  <h2>API Endpoints</h2>
   <ul>
-    <li><code>GET /health</code> - health check</li>
-    <li><code>POST /voice</code> - upload audio for transcription + extraction</li>
-    <li><code>POST /api/voice</code> - same as <code>/voice</code></li>
+    <li><code>GET /health</code></li>
+    <li><code>POST /voice</code></li>
+    <li><code>POST /api/voice</code></li>
   </ul>
 </section>
 {% endblock %}

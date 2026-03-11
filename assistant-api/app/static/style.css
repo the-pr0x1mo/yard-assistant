@@ -11,14 +11,14 @@ body {
 }
 
 .container {
-  width: min(900px, 92vw);
+  width: min(1040px, 94vw);
   margin: 0 auto;
 }
 
 .site-header {
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
-  padding: 1.25rem 0;
+  padding: 1rem 0;
 }
 
 .site-header h1 {
@@ -27,8 +27,28 @@ body {
 }
 
 .site-header p {
-  margin: 0.25rem 0 0;
+  margin: 0.25rem 0 0.75rem;
   color: #6b7280;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.site-nav a {
+  display: inline-block;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #111827;
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  background: #eef2ff;
 }
 
 main {
@@ -43,8 +63,103 @@ main {
   margin-bottom: 1rem;
 }
 
-h2 {
+.link-card {
+  text-decoration: none;
+  color: inherit;
+}
+
+.link-card:hover {
+  border-color: #c7d2fe;
+  background: #fafbff;
+}
+
+.grid-two {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+h2,
+h3,
+h4 {
   margin-top: 0;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  vertical-align: top;
+  padding: 0.55rem 0.45rem;
+}
+
+th {
+  font-weight: 600;
+  background: #f9fafb;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 0.3rem 0.8rem;
+  margin: 0;
+}
+
+.kv dt {
+  font-weight: 600;
+}
+
+.kv dd {
+  margin: 0;
+}
+
+.form-stack {
+  display: grid;
+  gap: 0.7rem;
+}
+
+input[type="file"],
+button {
+  font: inherit;
+}
+
+button {
+  width: fit-content;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #111827;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1f2937;
+}
+
+pre {
+  margin: 0.5rem 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.65rem;
+}
+
+.muted {
+  color: #6b7280;
 }
 
 code {

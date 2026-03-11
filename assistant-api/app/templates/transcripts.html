@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Transcripts | Yard Assistant{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>Raw Transcript Logs</h2>
+  <p class="muted">Recent entries from <code>hive_logs</code> for operational debugging.</p>
+</section>
+
+{% if logs %}
+  {% for item in logs %}
+  <section class="card">
+    <h3>Log #{{ item.id }} · Hive {{ item.hive_id }}</h3>
+    <p class="muted">{{ item.created_at }}</p>
+    <h4>Transcript</h4>
+    <pre>{{ item.raw_transcript }}</pre>
+    <details>
+      <summary>Parsed JSON</summary>
+      <pre>{{ item.data_json }}</pre>
+    </details>
+  </section>
+  {% endfor %}
+{% else %}
+<section class="card">
+  <p>No raw logs found yet.</p>
+</section>
+{% endif %}
+{% endblock %}

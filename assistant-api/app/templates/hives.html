@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Hives | Yard Assistant{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>Hives</h2>
+  <p class="muted">Known hives from the normalized table.</p>
+</section>
+
+{% if hives %}
+<section class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Hive ID</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Location</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for hive in hives %}
+      <tr>
+        <td><a href="/hives/{{ hive.hive_id }}">{{ hive.hive_id }}</a></td>
+        <td>{{ hive.name or "-" }}</td>
+        <td>{{ hive.hive_type or "-" }}</td>
+        <td>{{ hive.location or "-" }}</td>
+        <td>{{ hive.created_at or "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% else %}
+<section class="card">
+  <p>No hives found yet.</p>
+</section>
+{% endif %}
+{% endblock %}

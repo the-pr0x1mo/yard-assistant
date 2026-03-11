@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from typing import Any
 
 from app.schemas import HiveData, HiveInspectionPayload, InspectionData, MetricsData
 
@@ -203,5 +204,146 @@ def save_normalized_entry(payload: HiveInspectionPayload) -> None:
     except Exception:
         conn.rollback()
         raise
+    finally:
+        conn.close()
+
+
+def list_hives(limit: int = 200) -> list[dict[str, Any]]:
+    conn = get_conn()
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            """
+            SELECT
+                hive_id,
+                name,
+                hive_type,
+                location,
+                notes,
+                created_at
+            FROM hives
+            ORDER BY hive_id ASC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def get_hive(hive_id: str) -> dict[str, Any] | None:
+    conn = get_conn()
+    conn.row_factory = sqlite3.Row
+    try:
+        row = conn.execute(
+            """
+            SELECT
+                hive_id,
+                name,
+                hive_type,
+                location,
+                notes,
+                created_at
+            FROM hives
+            WHERE hive_id = ?
+            """,
+            (hive_id,),
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def list_hive_inspections(hive_id: str, limit: int = 50) -> list[dict[str, Any]]:
+    conn = get_conn()
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            """
+            SELECT
+                i.inspection_id,
+                i.hive_id,
+                i.inspected_at,
+                i.inspection_type,
+                i.beekeeper_strength,
+                i.reserves_estimate,
+                i.recommended_action,
+                i.note,
+                m.strength_score,
+                m.bagrem_readiness,
+                m.food_score,
+                m.swarm_risk,
+                m.queen_status,
+                m.confidence
+            FROM inspections i
+            LEFT JOIN inspection_metrics m
+                ON m.inspection_id = i.inspection_id
+            WHERE i.hive_id = ?
+            ORDER BY i.inspected_at DESC
+            LIMIT ?
+            """,
+            (hive_id, limit),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def list_recent_inspections(limit: int = 200) -> list[dict[str, Any]]:
+    conn = get_conn()
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            """
+            SELECT
+                i.inspection_id,
+                i.hive_id,
+                h.name AS hive_name,
+                i.inspected_at,
+                i.inspection_type,
+                i.beekeeper_strength,
+                i.reserves_estimate,
+                i.recommended_action,
+                i.note,
+                m.strength_score,
+                m.food_score,
+                m.swarm_risk,
+                m.queen_status,
+                m.confidence
+            FROM inspections i
+            LEFT JOIN hives h
+                ON h.hive_id = i.hive_id
+            LEFT JOIN inspection_metrics m
+                ON m.inspection_id = i.inspection_id
+            ORDER BY i.inspected_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def list_recent_logs(limit: int = 200) -> list[dict[str, Any]]:
+    conn = get_conn()
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            """
+            SELECT
+                id,
+                created_at,
+                hive_id,
+                raw_transcript,
+                data_json
+            FROM hive_logs
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
     finally:
         conn.close()

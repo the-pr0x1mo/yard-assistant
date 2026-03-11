@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Inspections | Yard Assistant{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>Recent Inspections</h2>
+  <p class="muted">Latest normalized inspection rows across all hives.</p>
+</section>
+
+{% if inspections %}
+<section class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Hive</th>
+        <th>Type</th>
+        <th>Strength</th>
+        <th>Reserves</th>
+        <th>Action</th>
+        <th>Food Score</th>
+        <th>Risk</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in inspections %}
+      <tr>
+        <td>{{ item.inspected_at or "-" }}</td>
+        <td>
+          <a href="/hives/{{ item.hive_id }}">{{ item.hive_id }}</a>
+          {% if item.hive_name %}<span class="muted">({{ item.hive_name }})</span>{% endif %}
+        </td>
+        <td>{{ item.inspection_type or "-" }}</td>
+        <td>{{ item.beekeeper_strength or "-" }}</td>
+        <td>{{ item.reserves_estimate or "-" }}</td>
+        <td>{{ item.recommended_action or "-" }}</td>
+        <td>{{ item.food_score if item.food_score is not none else "-" }}</td>
+        <td>{{ item.swarm_risk or "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% else %}
+<section class="card">
+  <p>No inspections found yet.</p>
+</section>
+{% endif %}
+{% endblock %}

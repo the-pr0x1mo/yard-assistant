@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Hive {{ hive_id }} | Yard Assistant{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>Hive {{ hive_id }}</h2>
+  {% if hive %}
+  <dl class="kv">
+    <dt>Name</dt>
+    <dd>{{ hive.name or "-" }}</dd>
+    <dt>Type</dt>
+    <dd>{{ hive.hive_type or "-" }}</dd>
+    <dt>Location</dt>
+    <dd>{{ hive.location or "-" }}</dd>
+    <dt>Notes</dt>
+    <dd>{{ hive.notes or "-" }}</dd>
+  </dl>
+  {% else %}
+  <p class="muted">Hive record not found in <code>hives</code>, showing any matching inspections.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Recent Inspections</h2>
+  {% if inspections %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Inspected At</th>
+          <th>Type</th>
+          <th>Strength</th>
+          <th>Reserves</th>
+          <th>Action</th>
+          <th>Score</th>
+          <th>Risk</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in inspections %}
+        <tr>
+          <td>{{ item.inspected_at or "-" }}</td>
+          <td>{{ item.inspection_type or "-" }}</td>
+          <td>{{ item.beekeeper_strength or "-" }}</td>
+          <td>{{ item.reserves_estimate or "-" }}</td>
+          <td>{{ item.recommended_action or "-" }}</td>
+          <td>{{ item.strength_score if item.strength_score is not none else "-" }}</td>
+          <td>{{ item.swarm_risk or "-" }}</td>
+          <td>{{ item.note or "-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>No inspections found for this hive.</p>
+  {% endif %}
+</section>
+{% endblock %}
