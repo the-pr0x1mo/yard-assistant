@@ -239,18 +239,15 @@ def list_hive_dashboard(limit: int = 200) -> list[dict[str, Any]]:
         rows = conn.execute(
             """
             SELECT
-                v.hive_id,
-                v.name,
-                v.inspection_id,
-                v.inspected_at,
-                v.strength_score,
-                v.food_score,
-                v.queen_status,
-                i.recommended_action AS action
-            FROM v_hive_latest v
-            LEFT JOIN inspections i
-                ON i.inspection_id = v.inspection_id
-            ORDER BY v.hive_id ASC
+                hive_id,
+                name,
+                inspected_at,
+                beekeeper_strength,
+                reserves_estimate,
+                queen_seen,
+                recommended_action
+            FROM v_hive_latest
+            ORDER BY hive_id ASC
             LIMIT ?
             """,
             (limit,),

@@ -110,6 +110,7 @@ CREATE INDEX IF NOT EXISTS idx_metrics_computed_at
   ON inspection_metrics (computed_at DESC);
 
 -- 4) View: poslednje stanje po kosnici
+DROP VIEW IF EXISTS v_hive_latest;
 CREATE VIEW IF NOT EXISTS v_hive_latest AS
 SELECT
   h.hive_id,
@@ -118,6 +119,10 @@ SELECT
   i.inspected_at,
   i.days_since_last_inspection,
   i.inspection_type,
+  i.beekeeper_strength,
+  i.reserves_estimate,
+  i.queen_seen,
+  i.recommended_action,
   m.strength_score,
   m.bagrem_readiness,
   m.food_score,

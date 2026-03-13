@@ -30,34 +30,31 @@
         </td>
         <td>{{ hive.inspected_at or "—" }}</td>
         <td>
-          {% if hive.strength_score is not none %}
-          <span class="badge badge-neutral">{{ "%.0f"|format(hive.strength_score) }}</span>
+          {% if hive.beekeeper_strength %}
+          <span class="badge badge-neutral">{{ hive.beekeeper_strength }}</span>
           {% else %}
           <span class="muted">—</span>
           {% endif %}
         </td>
         <td>
-          {% if hive.food_score is not none %}
-          <span class="badge badge-neutral">{{ "%.0f"|format(hive.food_score) }}</span>
+          {% if hive.reserves_estimate %}
+          <span class="badge badge-neutral">{{ hive.reserves_estimate }}</span>
           {% else %}
           <span class="muted">—</span>
           {% endif %}
         </td>
         <td>
-          {% set queen = hive.queen_status or "unknown" %}
-          {% if queen == "ok" %}
-          <span class="badge badge-good">ok</span>
-          {% elif queen == "suspect" %}
-          <span class="badge badge-warn">suspect</span>
-          {% elif queen == "missing" %}
-          <span class="badge badge-bad">missing</span>
+          {% if hive.queen_seen == 1 %}
+          <span class="badge badge-good">Seen</span>
+          {% elif hive.queen_seen == 0 %}
+          <span class="badge badge-warn">Not seen</span>
           {% else %}
           <span class="badge badge-neutral">Unknown</span>
           {% endif %}
         </td>
         <td>
-          {% if hive.action %}
-          <span class="badge badge-neutral">{{ hive.action }}</span>
+          {% if hive.recommended_action %}
+          <span class="badge badge-neutral">{{ hive.recommended_action }}</span>
           {% else %}
           <span class="muted">—</span>
           {% endif %}
