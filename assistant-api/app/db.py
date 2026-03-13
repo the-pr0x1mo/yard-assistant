@@ -232,6 +232,34 @@ def list_hives(limit: int = 200) -> list[dict[str, Any]]:
         conn.close()
 
 
+def list_hive_dashboard(limit: int = 200) -> list[dict[str, Any]]:
+    conn = get_conn()
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            """
+            SELECT
+                v.hive_id,
+                v.name,
+                v.inspection_id,
+                v.inspected_at,
+                v.strength_score,
+                v.food_score,
+                v.queen_status,
+                i.recommended_action AS action
+            FROM v_hive_latest v
+            LEFT JOIN inspections i
+                ON i.inspection_id = v.inspection_id
+            ORDER BY v.hive_id ASC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
 def get_hive(hive_id: str) -> dict[str, Any] | None:
     conn = get_conn()
     conn.row_factory = sqlite3.Row

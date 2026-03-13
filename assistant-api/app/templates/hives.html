@@ -5,7 +5,7 @@
 {% block content %}
 <section class="card">
   <h2>Hives</h2>
-  <p class="muted">Known hives from the normalized table.</p>
+  <p class="muted">Latest hive snapshot from <code>v_hive_latest</code>.</p>
 </section>
 
 {% if hives %}
@@ -13,21 +13,55 @@
   <table>
     <thead>
       <tr>
-        <th>Hive ID</th>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Location</th>
-        <th>Created</th>
+        <th>Hive</th>
+        <th>Last inspection</th>
+        <th>Strength</th>
+        <th>Food</th>
+        <th>Queen</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody>
       {% for hive in hives %}
       <tr>
-        <td><a href="/hives/{{ hive.hive_id }}">{{ hive.hive_id }}</a></td>
-        <td>{{ hive.name or "-" }}</td>
-        <td>{{ hive.hive_type or "-" }}</td>
-        <td>{{ hive.location or "-" }}</td>
-        <td>{{ hive.created_at or "-" }}</td>
+        <td>
+          <a href="/hives/{{ hive.hive_id }}">{{ hive.hive_id }}</a>
+          {% if hive.name %}<span class="muted">({{ hive.name }})</span>{% endif %}
+        </td>
+        <td>{{ hive.inspected_at or "—" }}</td>
+        <td>
+          {% if hive.strength_score is not none %}
+          <span class="badge badge-neutral">{{ "%.0f"|format(hive.strength_score) }}</span>
+          {% else %}
+          <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if hive.food_score is not none %}
+          <span class="badge badge-neutral">{{ "%.0f"|format(hive.food_score) }}</span>
+          {% else %}
+          <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% set queen = hive.queen_status or "unknown" %}
+          {% if queen == "ok" %}
+          <span class="badge badge-good">ok</span>
+          {% elif queen == "suspect" %}
+          <span class="badge badge-warn">suspect</span>
+          {% elif queen == "missing" %}
+          <span class="badge badge-bad">missing</span>
+          {% else %}
+          <span class="badge badge-neutral">Unknown</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if hive.action %}
+          <span class="badge badge-neutral">{{ hive.action }}</span>
+          {% else %}
+          <span class="muted">—</span>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

@@ -10,8 +10,8 @@ from faster_whisper import WhisperModel
 from app.db import (
     db_init,
     get_hive,
+    list_hive_dashboard,
     list_hive_inspections,
-    list_hives,
     list_recent_inspections,
     list_recent_logs,
     save_normalized_entry,
@@ -43,8 +43,8 @@ def home(request: Request):
 
 @app.get("/hives")
 def hives_page(request: Request):
-    hives = list_hives()
-    return templates.TemplateResponse("hives.html", {"request": request, "hives": hives})
+    dashboard_rows = list_hive_dashboard()
+    return templates.TemplateResponse("hives.html", {"request": request, "hives": dashboard_rows})
 
 
 @app.get("/hives/{hive_id}")
