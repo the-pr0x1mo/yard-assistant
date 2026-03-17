@@ -372,3 +372,57 @@ def list_recent_logs(limit: int = 200) -> list[dict[str, Any]]:
         return [dict(row) for row in rows]
     finally:
         conn.close()
+
+
+def export_all_data_json() -> dict[str, list[dict[str, Any]]]:
+    conn = get_conn()
+    conn.row_factory = sqlite3.Row
+    try:
+        hives = conn.execute(
+            "SELECT * FROM hives ORDER BY hive_id ASC"
+        ).fetchall()
+        inspections = conn.execute(
+            "SELECT * FROM inspections ORDER BY inspection_id ASC"
+        ).fetchall()
+        inspection_metrics = conn.execute(
+            "SELECT * FROM inspection_metrics ORDER BY metrics_id ASC"
+        ).fetchall()
+        hive_logs = conn.execute(
+            "SELECT * FROM hive_logs ORDER BY id ASC"
+        ).fetchall()
+        return {
+            "hives": [dict(row) for row in hives],
+            "inspections": [dict(row) for row in inspections],
+            "inspection_metrics": [dict(row) for row in inspection_metrics],
+            "hive_logs": [dict(row) for row in hive_logs],
+        }
+    finally:
+        conn.close()
+
+
+def export_hive_dashboard_csv_rows() -> list[dict[str, Any]]:
+    conn = get_conn()
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            """
+            SELECT
+                hive_id,
+                name,
+                inspected_at,
+                beekeeper_strength,
+                reserves_estimate,
+                queen_seen,
+                recommended_action,
+                strength_score,
+                food_score,
+                swarm_risk,
+                queen_status,
+                confidence
+            FROM v_hive_latest
+            ORDER BY hive_id ASC
+            """
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()

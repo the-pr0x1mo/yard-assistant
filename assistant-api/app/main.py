@@ -1,14 +1,20 @@
 import os
 import tempfile
+import csv
+import io
 from typing import Optional
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from faster_whisper import WhisperModel
 
 from app.db import (
+    DB_PATH,
     db_init,
+    export_all_data_json,
+    export_hive_dashboard_csv_rows,
     get_hive,
     list_hive_dashboard,
     list_hive_inspections,
@@ -78,6 +84,53 @@ def voice_page(request: Request):
 @app.get("/health")
 def health():
     return {"ok": True}
+
+
+@app.get("/export/json")
+def export_json():
+    payload = export_all_data_json()
+    return JSONResponse(
+        content=payload,
+        headers={"Content-Disposition": 'attachment; filename="yard-assistant-export.json"'},
+    )
+
+
+@app.get("/export/csv")
+def export_csv():
+    rows = export_hive_dashboard_csv_rows()
+    headers = [
+        "hive_id",
+        "name",
+        "inspected_at",
+        "beekeeper_strength",
+        "reserves_estimate",
+        "queen_seen",
+        "recommended_action",
+        "strength_score",
+        "food_score",
+        "swarm_risk",
+        "queen_status",
+        "confidence",
+    ]
+
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=headers)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({key: row.get(key) for key in headers})
+
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="yard-assistant-hives.csv"'},
+    )
+
+
+@app.get("/export/sqlite")
+def export_sqlite():
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail=f"SQLite database file not found at {DB_PATH}")
+    return FileResponse(DB_PATH, filename="yard-assistant.sqlite", media_type="application/octet-stream")
 
 
 @app.post("/api/voice")
