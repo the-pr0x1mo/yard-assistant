@@ -80,6 +80,12 @@ main {
   margin-bottom: 1rem;
 }
 
+.stat-value {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
 h2,
 h3,
 h4 {

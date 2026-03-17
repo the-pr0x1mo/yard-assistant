@@ -426,3 +426,34 @@ def export_hive_dashboard_csv_rows() -> list[dict[str, Any]]:
         return [dict(row) for row in rows]
     finally:
         conn.close()
+
+
+def get_stats_summary() -> dict[str, int]:
+    conn = get_conn()
+    conn.row_factory = sqlite3.Row
+    try:
+        row = conn.execute(
+            """
+            SELECT
+                COUNT(*) AS total_hives,
+                COALESCE(SUM(CASE WHEN beekeeper_strength IN ('jako', 'veoma_jako') THEN 1 ELSE 0 END), 0) AS strong_colonies,
+                COALESCE(SUM(CASE WHEN beekeeper_strength = 'slabo' THEN 1 ELSE 0 END), 0) AS weak_colonies,
+                COALESCE(SUM(CASE WHEN swarm_risk = 'high' THEN 1 ELSE 0 END), 0) AS swarm_risk
+            FROM v_hive_latest
+            """
+        ).fetchone()
+        if row is None:
+            return {
+                "total_hives": 0,
+                "strong_colonies": 0,
+                "weak_colonies": 0,
+                "swarm_risk": 0,
+            }
+        return {
+            "total_hives": int(row["total_hives"] or 0),
+            "strong_colonies": int(row["strong_colonies"] or 0),
+            "weak_colonies": int(row["weak_colonies"] or 0),
+            "swarm_risk": int(row["swarm_risk"] or 0),
+        }
+    finally:
+        conn.close()

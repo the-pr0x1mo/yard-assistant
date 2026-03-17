@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Stats | Yard Assistant{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>Hive Stats</h2>
+  <p class="muted">Quick operational snapshot calculated from <code>v_hive_latest</code>.</p>
+</section>
+
+<section class="grid-two">
+  <article class="card">
+    <h3>Total hives</h3>
+    <p class="stat-value">{{ stats.total_hives }}</p>
+  </article>
+
+  <article class="card">
+    <h3>Strong colonies</h3>
+    <p class="stat-value">{{ stats.strong_colonies }}</p>
+  </article>
+
+  <article class="card">
+    <h3>Weak colonies</h3>
+    <p class="stat-value">{{ stats.weak_colonies }}</p>
+  </article>
+
+  <article class="card">
+    <h3>Swarm risk</h3>
+    <p class="stat-value">{{ stats.swarm_risk }}</p>
+  </article>
+</section>
+{% endblock %}

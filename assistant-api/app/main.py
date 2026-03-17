@@ -16,6 +16,7 @@ from app.db import (
     export_all_data_json,
     export_hive_dashboard_csv_rows,
     get_hive,
+    get_stats_summary,
     list_hive_dashboard,
     list_hive_inspections,
     list_recent_inspections,
@@ -78,6 +79,12 @@ def transcripts_page(request: Request):
 @app.get("/voice")
 def voice_page(request: Request):
     return templates.TemplateResponse("voice.html", {"request": request})
+
+
+@app.get("/stats")
+def stats_page(request: Request):
+    stats = get_stats_summary()
+    return templates.TemplateResponse("stats.html", {"request": request, "stats": stats})
 
 
 # API routes
