@@ -28,16 +28,5 @@ services:
       - ollama
     restart: unless-stopped
 
-  assistant-ui:
-    image: nginx:alpine
-    container_name: assistant-ui
-    volumes:
-      - ./assistant-ui:/usr/share/nginx/html:ro
-    ports:
-      - "8080:80"
-    depends_on:
-      - assistant-api
-    restart: unless-stopped
-
 volumes:
   ollama:
