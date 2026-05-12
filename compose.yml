@@ -13,13 +13,8 @@ services:
     build: ./assistant-api
     container_name: assistant-api
     gpus: all
-    environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=llama3.1:8b
-      - DB_PATH=/data/db/logbook.sqlite
-      - WHISPER_MODEL=small
-      - WHISPER_DEVICE=cuda
-      - WHISPER_COMPUTE=float16
+    env_file:
+      - .env
     volumes:
       - /mnt/data/yard-assistant:/data
     ports:
