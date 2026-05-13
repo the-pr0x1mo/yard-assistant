@@ -10,6 +10,11 @@ GET requests render dashboard pages server-side using FastAPI, SQLite, and Jinja
 
 POST requests upload audio notes to FastAPI. The backend passes audio to Whisper for transcription, sends the transcript to Ollama for structured extraction, validates the result with Pydantic, and stores both raw and structured records in SQLite.
 
+The MVP treats the raw transcript as the source of truth. The raw audit log is
+written first, and the normalized inspection insert is best effort. This keeps
+the original spoken note available even when structured extraction fails or
+produces low-confidence data.
+
 ## Request Flow
 
 ### Dashboard / Read Flow
@@ -75,3 +80,13 @@ SQLite
 | Pydantic | Schema validation and data normalization |
 | SQLite | Stores raw logs and structured inspection data |
 | Tailscale | Secure HTTPS access for browser microphone support |
+
+## Data Reliability Notes
+
+- `hive_logs` preserves the raw transcript and parsed JSON payload for audit and
+  recovery.
+- `inspections` and `inspection_metrics` store normalized records derived from
+  the transcript.
+- Structured extraction is experimental, especially for Serbian beekeeping
+  terminology, so downstream views should treat normalized fields as editable or
+  reviewable data rather than guaranteed facts.
