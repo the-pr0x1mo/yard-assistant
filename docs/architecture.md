@@ -4,7 +4,7 @@ Yard Assistant is a self-hosted, voice-first beekeeping logbook. It uses a serve
 
 ## High-Level Architecture
 
-![Yard Assistant architecture](docs/architecture.png)
+![Yard Assistant architecture](docs/architecture-diagram.png)
 
 GET requests render dashboard pages server-side using FastAPI, SQLite, and Jinja2.
 

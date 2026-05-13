@@ -160,9 +160,6 @@
         <mxCell id="LIquaIb-kvhMgd8hNPrt-25" parent="LIquaIb-kvhMgd8hNPrt-56" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.microphone;" value="" vertex="1">
           <mxGeometry height="30" width="12" x="22" y="50" as="geometry" />
         </mxCell>
-        <mxCell id="LIquaIb-kvhMgd8hNPrt-59" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;GET requests render dashboard pages server-side using FastAPI, SQLite, and Jinja2.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;POST requests upload audio notes to FastAPI. The backend passes audio to Whisper for transcription, sends the transcript to Ollama for structured extraction, validates the result with Pydantic, and stores both raw and structured records in SQLite.&lt;/div&gt;" vertex="1">
-          <mxGeometry height="70" width="900" x="260" y="370" as="geometry" />
-        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
