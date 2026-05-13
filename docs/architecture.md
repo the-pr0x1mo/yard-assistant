@@ -36,9 +36,9 @@ Jinja2 UI
     | rendered HTML response
     v
 Phone / Browser
+```
 
 ### Voice / Write Flow
-```
 
 ```text
 Phone / Browser
