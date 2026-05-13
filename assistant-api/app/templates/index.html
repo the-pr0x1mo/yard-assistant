@@ -10,6 +10,23 @@
     structured inspection data in SQLite.
   </p>
 </section>
+
+<section class="card">
+  <h2>Record Log Entry</h2>
+  <p>Record from your browser microphone and send directly to <code>/api/voice</code>.</p>
+  <div class="record-controls">
+    <button id="record-start" type="button">Start recording</button>
+    <button id="record-stop" type="button" disabled>Stop</button>
+    <button id="record-send" type="button" disabled>Send to API</button>
+  </div>
+  <p id="record-status" class="muted">Idle</p>
+  <details id="record-result-wrap">
+    <summary>API response</summary>
+    <pre id="record-result"></pre>
+  </details>
+</section>
+
+
 <section class="card">
   <h2>Data export</h2>
 
@@ -49,51 +66,34 @@
   </ul>
 </section>
 
-<section class="card">
-  <h2>Record Log Entry</h2>
-  <p>Record from your browser microphone and send directly to <code>/api/voice</code>.</p>
-  <div class="record-controls">
-    <button id="record-start" type="button">Start recording</button>
-    <button id="record-stop" type="button" disabled>Stop</button>
-    <button id="record-send" type="button" disabled>Send to API</button>
-  </div>
-  <p id="record-status" class="muted">Idle</p>
-  <details id="record-result-wrap">
-    <summary>API response</summary>
-    <pre id="record-result"></pre>
-  </details>
-</section>
-
 <script>
   (() => {
     const startBtn = document.getElementById("record-start");
     const stopBtn = document.getElementById("record-stop");
     const sendBtn = document.getElementById("record-send");
     const statusEl = document.getElementById("record-status");
-    const resultEl = document.getElementById("record-result");
-    const resultWrap = document.getElementById("record-result-wrap");
 
     let mediaRecorder = null;
     let stream = null;
     let recordedChunks = [];
     let recordedBlob = null;
 
-    function setStatus(message) {
+    function setStatus(message, type = "info") {
       statusEl.textContent = message;
-    }
-
-    function resetResult() {
-      resultEl.textContent = "";
-      resultWrap.open = false;
+      statusEl.className = `muted status-${type}`;
     }
 
     startBtn.addEventListener("click", async () => {
-      resetResult();
       recordedChunks = [];
       recordedBlob = null;
       sendBtn.disabled = true;
 
       try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setStatus("Microphone is not available. Use HTTPS and allow microphone access.", "error");
+          return;
+        }
+
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
 
@@ -104,9 +104,19 @@
         };
 
         mediaRecorder.onstop = () => {
-          recordedBlob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+          recordedBlob = new Blob(recordedChunks, {
+            type: mediaRecorder.mimeType || "audio/webm"
+          });
+
           sendBtn.disabled = recordedBlob.size === 0;
-          setStatus(recordedBlob.size > 0 ? "Recording ready to send." : "No audio captured.");
+
+          setStatus(
+            recordedBlob.size > 0
+              ? "Recording ready. Tap Send to API."
+              : "No audio captured.",
+            recordedBlob.size > 0 ? "success" : "error"
+          );
+
           if (stream) {
             stream.getTracks().forEach((track) => track.stop());
             stream = null;
@@ -116,25 +126,29 @@
         mediaRecorder.start();
         startBtn.disabled = true;
         stopBtn.disabled = false;
-        setStatus("Recording...");
+        setStatus("Recording...", "info");
       } catch (err) {
-        setStatus("Microphone access failed.");
+        setStatus(`Microphone access failed: ${err.message || err.name || "unknown error"}`, "error");
       }
     });
 
     stopBtn.addEventListener("click", () => {
       if (!mediaRecorder) return;
+
       mediaRecorder.stop();
       stopBtn.disabled = true;
       startBtn.disabled = false;
-      setStatus("Processing recording...");
+      setStatus("Processing recording...", "info");
     });
 
     sendBtn.addEventListener("click", async () => {
-      if (!recordedBlob) return;
-      setStatus("Uploading...");
+      if (!recordedBlob) {
+        setStatus("No recording available to send.", "error");
+        return;
+      }
+
+      setStatus("Uploading...", "info");
       sendBtn.disabled = true;
-      resetResult();
 
       try {
         const ext = recordedBlob.type.includes("ogg") ? "ogg" : "webm";
@@ -146,20 +160,16 @@
           body: formData
         });
 
-        const text = await response.text();
-        let pretty = text;
-        try {
-          pretty = JSON.stringify(JSON.parse(text), null, 2);
-        } catch (_) {
-          // Keep raw text if response is not JSON.
+        if (response.ok) {
+          setStatus("Saved successfully. Check Transcripts or Inspections.", "success");
+          recordedBlob = null;
+        } else {
+          const errorText = await response.text();
+          setStatus(`Upload failed: API returned ${response.status}. ${errorText.slice(0, 120)}`, "error");
+          sendBtn.disabled = false;
         }
-
-        resultEl.textContent = pretty;
-        resultWrap.open = true;
-        setStatus(response.ok ? "Done." : `API error (${response.status}).`);
       } catch (err) {
-        setStatus("Upload failed.");
-      } finally {
+        setStatus(`Upload failed: ${err.message || err.name || "network/browser error"}`, "error");
         sendBtn.disabled = false;
       }
     });

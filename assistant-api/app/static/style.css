@@ -212,3 +212,23 @@ code {
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
 }
+
+.record-card {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.status-success {
+  color: #065f46;
+  font-weight: 600;
+}
+
+.status-error {
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.status-info {
+  color: #6b7280;
+}
