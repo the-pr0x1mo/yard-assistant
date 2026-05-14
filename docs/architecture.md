@@ -17,6 +17,8 @@ produces low-confidence data.
 
 ## Request Flow
 
+For a step-by-step walkthrough of the ingestion flow, see [Life of a Voice Log](life-of-a-voice-log.md).
+
 ### Dashboard / Read Flow
 
 ```text
@@ -68,6 +70,7 @@ Pydantic Validation
     v
 SQLite
 ```
+For a step-by-step walkthrough of the ingestion flow, see [Life of a Voice Log](life-of-a-voice-log.md).
 
 ## Component Responsibilities
 
