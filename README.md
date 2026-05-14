@@ -92,13 +92,11 @@ backups, and operational hardening.
 
 ## Screenshots
 
-Screenshots are available in [screenshots](screenshots/).
+Screenshots are available in [docs/screenshots](docs/screenshots/).
 
 ## Acknowledgements
 
-This is my first FOSS contribution. The project was developed with help from
-ChatGPT, nicknamed "Čeda" during the early build, as a coding and writing
-assistant.
+This is my first public open-source project, developed with help from ChatGPT as a coding and writing assistant.
 
 ## License
 
