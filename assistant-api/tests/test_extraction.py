@@ -69,7 +69,7 @@ def test_log25_contract(ollama):
     assert body["stream"] is False
     assert body["options"]["temperature"] == 0
     assert body["model"] == services.OLLAMA_MODEL
-    assert body["system"] == services.SEMANTIC_HINTS
+    assert body["system"] == services.build_system_prompt(SEED_TRANSCRIPT)
     for key in ("total_duration", "prompt_eval_duration", "eval_duration", "prompt_eval_count", "eval_count"):
         assert key in result.metadata
     for key in ("request_ms", "validation_ms", "duration_ms"):

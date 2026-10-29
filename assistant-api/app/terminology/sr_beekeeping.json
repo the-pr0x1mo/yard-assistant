@@ -1,0 +1,766 @@
+{
+  "version": 2,
+  "terms": {
+    "brood_frames": {
+      "canonical": "brood_frames",
+      "serbian": "ramovi sa leglom",
+      "synonyms": [
+        "ram sa leglom",
+        "ramova sa leglom",
+        "ramovi legla",
+        "ramova legla",
+        "rama legla",
+        "rama sa leglom",
+        "ramova s leglom",
+        "ram legla"
+      ],
+      "negative": [
+        "nema ramova sa leglom"
+      ],
+      "unknown": [
+        "ramove sa leglom nisam brojao"
+      ]
+    },
+    "open_brood": {
+      "serbian": "otvoreno leglo",
+      "synonyms": [
+        "larve",
+        "larvi",
+        "nezatvoreno leglo"
+      ],
+      "positive": [
+        "ima larvi",
+        "ima otvorenog legla",
+        "video sam larve"
+      ],
+      "negative": [
+        "nema larvi",
+        "nema otvorenog legla",
+        "larve nisu viđene"
+      ],
+      "unknown": [
+        "larve nisam proveravao",
+        "otvoreno leglo nisam proveravao",
+        "otvoreno leglo nije provereno",
+        "nisam siguran da ima larvi",
+        "ne znam da li ima larvi"
+      ]
+    },
+    "capped_brood": {
+      "serbian": "zatvoreno leglo",
+      "synonyms": [
+        "poklopljeno leglo",
+        "zatvorenog legla",
+        "poklopljenog legla"
+      ],
+      "negative": [
+        "nema zatvorenog legla",
+        "nema poklopljenog legla"
+      ],
+      "unknown": [
+        "zatvoreno leglo nisam proveravao",
+        "zatvoreno leglo nije provereno"
+      ],
+      "asr_variants": {
+        "uncertain": [
+          "zatvrno glijedla"
+        ]
+      },
+      "positive": [
+        "ima zatvorenog legla",
+        "ima poklopljenog legla"
+      ]
+    },
+    "behavior": {
+      "serbian": "ponašanje društva",
+      "values": {
+        "mirne": [
+          "mirno",
+          "mirne",
+          "miran temperament",
+          "temperament miran",
+          "društvo je mirno",
+          "mirna"
+        ],
+        "nervozne": [
+          "nervozne",
+          "ljute",
+          "agresivne",
+          "nervozno društvo",
+          "pčele su uznemirene"
+        ],
+        "pljacka": [
+          "pljačka",
+          "grabež"
+        ],
+        "sumnjivo": [
+          "sumnjivo ponašanje"
+        ]
+      },
+      "unknown": [
+        "ponašanje nisam proveravao"
+      ],
+      "asr_variants": {
+        "contextual": [
+          "temperament mirana"
+        ]
+      },
+      "synonyms": [
+        "ponašanje pčela"
+      ],
+      "note_required": [
+        "ljute",
+        "agresivne",
+        "izrazito agresivne",
+        "jako nervozne"
+      ]
+    },
+    "temperature_c": {
+      "serbian": "temperatura vazduha",
+      "synonyms": [
+        "temperatura",
+        "stepeni",
+        "stepeni Celzijusa"
+      ],
+      "unknown": [
+        "temperaturu nisam merio"
+      ]
+    },
+    "days_since_last_inspection": {
+      "serbian": "dani od poslednjeg pregleda",
+      "synonyms": [
+        "dana od poslednjeg pregleda",
+        "dana od prethodnog pregleda"
+      ],
+      "unknown": [
+        "ne znam kada je bio poslednji pregled"
+      ]
+    },
+    "inspection_type": {
+      "serbian": "vrsta pregleda",
+      "values": {
+        "spoljni": [
+          "spoljni pregled",
+          "pregled spolja",
+          "samo spoljni pregled"
+        ],
+        "brzi": [
+          "brzi pregled",
+          "kratak pregled"
+        ],
+        "potpuni": [
+          "potpuni pregled",
+          "kompletan pregled"
+        ]
+      },
+      "unknown": [
+        "vrstu pregleda nisam naveo"
+      ],
+      "uncertain": [
+        "detaljan pregled"
+      ]
+    },
+    "flight_activity": {
+      "serbian": "aktivnost leta",
+      "synonyms": [
+        "izlet pčela",
+        "pčele lete",
+        "let ocenjen",
+        "aktivnost na letu"
+      ],
+      "unknown": [
+        "let nisam posmatrao"
+      ],
+      "uncertain": [
+        "slab izlet",
+        "jak izlet",
+        "nema izleta"
+      ]
+    },
+    "pollen_intake": {
+      "serbian": "unos polena",
+      "synonyms": [
+        "donose polen",
+        "unose polen",
+        "unos polena ocenjen"
+      ],
+      "unknown": [
+        "unos polena nisam proveravao"
+      ],
+      "uncertain": [
+        "slab unos polena",
+        "nema unosa polena",
+        "jak unos polena"
+      ]
+    },
+    "weight_class": {
+      "serbian": "težina košnice",
+      "values": {
+        "laka": [
+          "košnica je laka",
+          "laka košnica"
+        ],
+        "srednja": [
+          "košnica je srednje teška",
+          "košnica srednje težine"
+        ],
+        "teska": [
+          "košnica je teška",
+          "teška košnica"
+        ],
+        "vrlo_teska": [
+          "košnica je vrlo teška",
+          "košnica je veoma teška"
+        ]
+      },
+      "unknown": [
+        "težinu košnice nisam proveravao"
+      ]
+    },
+    "dead_bees_front": {
+      "serbian": "mrtve pčele ispred košnice",
+      "values": {
+        "0": [
+          "nema mrtvih pčela ispred",
+          "nema mrtvih pčela ispred košnice"
+        ],
+        "malo": [
+          "malo mrtvih pčela ispred",
+          "nekoliko mrtvih pčela ispred košnice"
+        ],
+        "puno": [
+          "puno mrtvih pčela ispred",
+          "mnogo mrtvih pčela ispred košnice"
+        ]
+      },
+      "unknown": [
+        "mrtve pčele ispred nisam proveravao"
+      ]
+    },
+    "bee_streets": {
+      "serbian": "ulice pčela",
+      "synonyms": [
+        "ulica pčela",
+        "pčelinjih ulica",
+        "pčelinje ulice",
+        "zauzetih ulica",
+        "posednutih ulica"
+      ],
+      "negative": [
+        "nema posednutih ulica"
+      ],
+      "unknown": [
+        "ulice nisam brojao"
+      ]
+    },
+    "bee_covered_frames": {
+      "serbian": "ramovi posednuti pčelama",
+      "synonyms": [
+        "ramova pčela",
+        "ramova posednutih pčelama",
+        "ramova pokrivenih pčelama",
+        "ramovi sa pčelama",
+        "posednutih ramova"
+      ],
+      "negative": [
+        "nema ramova posednutih pčelama"
+      ],
+      "unknown": [
+        "ramove posednute pčelama nisam brojao"
+      ]
+    },
+    "bee_brood_cover": {
+      "supported": false,
+      "reason": "Pokrivenost legla pčelama nema ekvivalent u InspectionData. Nije isto što i broj ramova posednutih pčelama (bee_covered_frames). Sačuvati opažanje u note."
+    },
+    "brood_pattern": {
+      "serbian": "raspored legla",
+      "values": {
+        "kompaktno": [
+          "kompaktno leglo",
+          "leglo je kompaktno",
+          "raspored legla je kompaktan",
+          "zbijeno leglo"
+        ],
+        "rastrkano": [
+          "raštrkano leglo",
+          "leglo je raštrkano",
+          "šareno leglo"
+        ],
+        "sumnjivo": [
+          "sumnjiv raspored legla"
+        ]
+      },
+      "unknown": [
+        "raspored legla nisam proveravao"
+      ],
+      "uncertain": [
+        "rupičasto leglo"
+      ]
+    },
+    "queen_seen": {
+      "serbian": "matica viđena",
+      "synonyms": [
+        "matica",
+        "maticu"
+      ],
+      "positive": [
+        "matica viđena",
+        "video sam maticu",
+        "video maticu",
+        "matica je viđena",
+        "našao sam maticu"
+      ],
+      "negative": [
+        "maticu nisam video",
+        "matica nije viđena",
+        "nisam video maticu",
+        "nisam našao maticu"
+      ],
+      "unknown": [
+        "maticu nisam tražio",
+        "maticu nisam proveravao",
+        "možda sam video maticu",
+        "matica nije tražena",
+        "ne znam da li je matica viđena",
+        "nisam siguran da sam video maticu"
+      ],
+      "asr_variants": {
+        "contextual": [
+          "matice vidjena",
+          "matca"
+        ]
+      }
+    },
+    "eggs_seen": {
+      "serbian": "jaja",
+      "synonyms": [
+        "jajašca",
+        "jajašaca"
+      ],
+      "positive": [
+        "jaja viđena",
+        "ima jaja",
+        "video sam jaja",
+        "ima jajašaca"
+      ],
+      "negative": [
+        "nema jaja",
+        "jaja nisu viđena",
+        "nema jajašaca"
+      ],
+      "unknown": [
+        "jaja nisam proveravao",
+        "jaja nisu proverena",
+        "nisam siguran da ima jaja"
+      ],
+      "uncertain": [
+        "ima zasejenog",
+        "ima sveže zasijanog",
+        "ima sveže zasejanog"
+      ]
+    },
+    "honey_frames": {
+      "serbian": "ramovi sa medom",
+      "synonyms": [
+        "rama sa medom",
+        "ramova sa medom",
+        "ramova meda",
+        "ram meda",
+        "ramova s medom"
+      ],
+      "negative": [
+        "nema ramova sa medom"
+      ],
+      "unknown": [
+        "ramove sa medom nisam brojao"
+      ]
+    },
+    "reserves_estimate": {
+      "serbian": "procena zaliha hrane",
+      "synonyms": [
+        "zalihe hrane",
+        "zalihe"
+      ],
+      "values": {
+        "kriticno": [
+          "zalihe su kritične",
+          "kritične zalihe"
+        ],
+        "nisko": [
+          "zalihe su niske",
+          "male zalihe",
+          "malo zaliha hrane"
+        ],
+        "dovoljno": [
+          "zalihe su dovoljne",
+          "dovoljno zaliha hrane"
+        ],
+        "visak": [
+          "višak zaliha",
+          "višak hrane"
+        ]
+      },
+      "unknown": [
+        "zalihe nisam proveravao"
+      ],
+      "uncertain": [
+        "ima nešto hrane"
+      ]
+    },
+    "pollen_frames": {
+      "serbian": "ramovi sa polenom",
+      "synonyms": [
+        "rama sa polenom",
+        "ramova polena",
+        "ramova sa pergom",
+        "ramovi sa pergom",
+        "ramova perge",
+        "ram polena"
+      ],
+      "negative": [
+        "nema ramova sa polenom"
+      ],
+      "unknown": [
+        "ramove sa polenom nisam brojao"
+      ]
+    },
+    "honey_bands": {
+      "canonical": "honey_bands",
+      "serbian": "medni venac",
+      "values": {
+        "nema": [
+          "nema venca",
+          "nema mednog venca"
+        ],
+        "slabi": [
+          "tanak venac",
+          "slab venac",
+          "slabi venci",
+          "tanak medni venac",
+          "slab medni venac"
+        ],
+        "dobri": [
+          "dobar venac",
+          "dobar luk",
+          "dobar medni venac",
+          "dobri medni venci"
+        ],
+        "jaki": [
+          "jak venac",
+          "veliki venac",
+          "jaki venci",
+          "jak medni venac",
+          "veliki medni venac"
+        ]
+      },
+      "synonyms": [
+        "venac",
+        "medni luk",
+        "medni venci"
+      ],
+      "uncertain": [
+        "nije los venac",
+        "srednji venac",
+        "srednji luk",
+        "srednji medni venac",
+        "osrednji venac",
+        "los venac",
+        "venac je prisutan"
+      ],
+      "unknown": [
+        "venac nisam proveravao",
+        "medni venac nije proveren"
+      ]
+    },
+    "free_space": {
+      "serbian": "slobodan prostor",
+      "values": {
+        "nema": [
+          "nema slobodnog prostora"
+        ],
+        "malo": [
+          "malo slobodnog prostora"
+        ],
+        "dovoljno": [
+          "dovoljno slobodnog prostora"
+        ],
+        "previse": [
+          "previše slobodnog prostora"
+        ]
+      },
+      "unknown": [
+        "slobodan prostor nisam proveravao"
+      ]
+    },
+    "queen_cells": {
+      "serbian": "matičnjaci",
+      "synonyms": [
+        "matičnjaka"
+      ],
+      "values": {
+        "nema": [
+          "nema matičnjaka",
+          "matičnjaci nisu nađeni"
+        ],
+        "zapoceti": [
+          "započeti matičnjaci",
+          "ima započetih matičnjaka"
+        ],
+        "zatvoreni": [
+          "zatvoreni matičnjaci",
+          "ima zatvorenih matičnjaka",
+          "poklopljeni matičnjaci"
+        ]
+      },
+      "unknown": [
+        "nisam proverio matičnjake",
+        "matičnjake nisam proveravao"
+      ],
+      "uncertain": [
+        "ima matičnjaka",
+        "matične čašice"
+      ]
+    },
+    "swarm_signs": {
+      "serbian": "znaci rojenja",
+      "synonyms": [
+        "rojevni nagon"
+      ],
+      "positive": [
+        "ima znakova rojenja",
+        "društvo ima rojevni nagon"
+      ],
+      "negative": [
+        "nema znakova rojenja",
+        "nema rojevnog nagona"
+      ],
+      "unknown": [
+        "znake rojenja nisam proveravao",
+        "možda ima znakova rojenja"
+      ]
+    },
+    "super_added": {
+      "serbian": "dodat nastavak",
+      "synonyms": [
+        "dodao nastavak"
+      ],
+      "unknown": [
+        "treba dodati nastavak",
+        "dodaću nastavak",
+        "nastavak nije proveren",
+        "planiram da dodam nastavak"
+      ],
+      "positive": [
+        "dodao sam nastavak",
+        "dodat je nastavak",
+        "stavio sam nastavak"
+      ],
+      "negative": [
+        "nastavak nisam dodao",
+        "nisam dodao nastavak"
+      ]
+    },
+    "foundation_added": {
+      "serbian": "dodate satne osnove",
+      "synonyms": [
+        "satne osnove",
+        "satnih osnova"
+      ],
+      "positive": [
+        "dodao sam jednu satnu osnovu"
+      ],
+      "negative": [
+        "nisam dodao satne osnove",
+        "satne osnove nisu dodate"
+      ],
+      "unknown": [
+        "treba dodati satne osnove",
+        "planiram da dodam satne osnove"
+      ],
+      "uncertain": [
+        "dodao sam satne osnove",
+        "dodate su satne osnove"
+      ]
+    },
+    "varroa_level": {
+      "serbian": "nivo varoe",
+      "synonyms": [
+        "varoa",
+        "varoe",
+        "varroa",
+        "krpelj varoa"
+      ],
+      "values": {
+        "nema": [
+          "varoa nije nađena",
+          "nema varoe"
+        ],
+        "malo": [
+          "varoa malo",
+          "malo varoe"
+        ],
+        "srednje": [
+          "varoa srednje",
+          "srednji nivo varoe"
+        ],
+        "jako": [
+          "varoa jako",
+          "jak nivo varoe"
+        ]
+      },
+      "unknown": [
+        "varou nisam proveravao",
+        "nivo varoe nije utvrđen"
+      ],
+      "uncertain": [
+        "ima varoe",
+        "tretirano protiv varoe"
+      ]
+    },
+    "deformed_bees": {
+      "serbian": "deformisane pčele",
+      "synonyms": [
+        "deformisana krila",
+        "deformisanih pčela"
+      ],
+      "positive": [
+        "ima deformisanih pčela",
+        "video sam pčele sa deformisanim krilima"
+      ],
+      "negative": [
+        "nema deformisanih pčela"
+      ],
+      "unknown": [
+        "deformisane pčele nisam proveravao"
+      ]
+    },
+    "diarrhea": {
+      "serbian": "proliv",
+      "synonyms": [
+        "tragovi proliva",
+        "proliva"
+      ],
+      "positive": [
+        "ima proliva",
+        "vidljivi tragovi proliva"
+      ],
+      "negative": [
+        "nema proliva",
+        "nema tragova proliva"
+      ],
+      "unknown": [
+        "proliv nisam proveravao"
+      ],
+      "uncertain": [
+        "mrlje na letu"
+      ]
+    },
+    "humidity_issue": {
+      "serbian": "problem sa vlagom",
+      "synonyms": [
+        "vlaga u košnici",
+        "kondenzacija u košnici"
+      ],
+      "positive": [
+        "ima problema sa vlagom",
+        "ima kondenzacije u košnici"
+      ],
+      "negative": [
+        "nema problema sa vlagom",
+        "nema vlage u košnici"
+      ],
+      "unknown": [
+        "vlagu nisam proveravao"
+      ],
+      "uncertain": [
+        "buđ na ramu"
+      ]
+    },
+    "actions_taken": {
+      "serbian": "obavljene radnje",
+      "synonyms": [
+        "prihrana",
+        "tretman",
+        "tretman protiv varoe"
+      ],
+      "positive": [
+        "prihranio sam društvo",
+        "obavio sam tretman",
+        "tretirao sam protiv varoe",
+        "dodao sam nastavak"
+      ],
+      "negative": [
+        "nisam ništa radio"
+      ],
+      "unknown": [
+        "planiram prihranu",
+        "treba obaviti tretman",
+        "planiram tretman protiv varoe"
+      ]
+    },
+    "beekeeper_strength": {
+      "serbian": "pčelareva procena snage društva",
+      "synonyms": [
+        "snaga društva"
+      ],
+      "values": {
+        "slabo": [
+          "društvo je slabo",
+          "slabo društvo"
+        ],
+        "srednje": [
+          "društvo je srednje jako",
+          "društvo srednje jačine"
+        ],
+        "jako": [
+          "društvo je jako",
+          "jako društvo"
+        ],
+        "veoma_jako": [
+          "društvo je veoma jako",
+          "vrlo jako društvo"
+        ]
+      },
+      "unknown": [
+        "snagu društva nisam procenjivao"
+      ]
+    },
+    "note": {},
+    "trend_flight": {
+      "serbian": "promena aktivnosti leta",
+      "values": {
+        "raste": [
+          "let raste",
+          "let se pojačava"
+        ],
+        "isto": [
+          "let je isti",
+          "let je nepromenjen"
+        ],
+        "opada": [
+          "let opada",
+          "let se smanjuje"
+        ]
+      }
+    },
+    "trend_weight": {
+      "serbian": "promena težine košnice",
+      "values": {
+        "dobija": [
+          "košnica dobija na težini",
+          "težina raste"
+        ],
+        "isto": [
+          "težina je ista",
+          "težina je nepromenjena"
+        ],
+        "gubi": [
+          "košnica gubi na težini",
+          "težina gubi",
+          "težina opada"
+        ]
+      }
+    }
+  }
+}
