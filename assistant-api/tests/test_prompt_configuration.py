@@ -68,3 +68,13 @@ def test_dictionary_configuration_failure_never_becomes_a_fallback_inspection(ol
     result = services.ollama_extract("Košnica 1.")
     assert result.status == "failed" and result.payload is None
     request.assert_not_called()
+
+
+def test_prompt_requires_local_evidence_before_assigning_negative_flags():
+    # These checks protect the instructions; live model adherence is unproven.
+    prompt = services.read_prompt("hive_semantics_v2_1")
+    for fragment in ("Without one, leave it null", "other fields are explicitly\nnegative",
+                     "Never fill remaining flags with 0", "they are not observations in this log",
+                     "diarrhea=0, super_added=0", "queen_seen=1; capped_brood=null",
+                     '"makica vidjena" remain uncertain', '"Makica vidjena" is not an explicit negative'):
+        assert fragment in prompt

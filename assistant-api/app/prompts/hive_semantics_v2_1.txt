@@ -12,6 +12,14 @@ integers; flags are integer 0/1, never booleans. Explicit absence is 0 for flags
 not checking, not knowing or uncertain speech is null. Negation and uncertainty
 override a matching positive word or dictionary synonym. Resolve each field in
 its own clause; one observation's negation does not negate unrelated observations.
+For each field, first find an explicit observation about that field in the
+transcript. Without one, leave it null, even when other fields are explicitly
+negative. Never fill remaining flags with 0 or copy a negative across fields.
+Examples below describe mappings only; they are not observations in this log.
+"Nema proliva. Nastavak nisam dodao." -> diarrhea=0, super_added=0;
+open_brood=null, capped_brood=null, queen_seen=null, eggs_seen=null.
+"Nema proliva. Ima larvi. Matica viđena." -> diarrhea=0, open_brood=1,
+queen_seen=1; capped_brood=null, eggs_seen=null. Keep each observation's polarity.
 Conflicting observations without an explicit correction remain null with a note.
 
 Tri rama sa leglom -> brood_frames=3; četiri rama sa medom -> honey_frames=4.
@@ -25,6 +33,10 @@ Only explicit jaja/jajašca observations set eggs_seen. "Ima zasejenog" or "ima 
 zasijanog" alone is ambiguous: eggs_seen=null; retain that exact phrase in note.
 "Ima zatvorenog legla" -> capped_brood=1; "zatvrno glijedla" alone remains uncertain:
 capped_brood=null and retain it in note, even when other brood is clearly observed.
+ASR phrases "zatvoranog legla", "zasijanog" and "makica vidjena" remain uncertain:
+retain exact excerpts in note. Alone they establish neither capped brood, eggs nor
+queen sighting. "Makica vidjena" is not an explicit negative: queen_seen=null,
+never 0, unless a separate clear queen observation establishes the value.
 Temperament miran / temperament mirana -> behavior="mirne". Nervous bees ->
 "nervozne"; explicitly angry/aggressive bees may use that closest enum too, but
 preserve the original intensity in note. Do not derive health or productivity.

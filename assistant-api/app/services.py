@@ -46,19 +46,35 @@ def utc_now_sql() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def parse_payload(text: str, transcript: str) -> HiveInspectionPayload:
+class HiveIdentifierConflict(ValueError):
+    """A model candidate cannot be assigned to a different explicit hive."""
+
+
+def parse_payload(text: str, transcript: str, *, metadata: dict | None = None) -> HiveInspectionPayload:
     parsed = json.loads(text)
     if not isinstance(parsed, dict):
         raise TypeError("Expected a JSON object")
     payload = HiveInspectionPayload.model_validate(parsed)
     ids = transcript_hive_ids(transcript)
+    model_id = payload.hive.hive_id
     if len(ids) > 1:
+        status = "multiple"
         payload.hive.hive_id = "UNKNOWN"
     elif ids:
         identifier = next(iter(ids))
-        if payload.hive.hive_id not in ("UNKNOWN", identifier):
-            raise ValueError("Model hive identifier conflicts with transcript")
+        status = "conflict" if model_id not in ("UNKNOWN", identifier) else "verified"
         payload.hive.hive_id = identifier
+    else:
+        status = "missing" if model_id == "UNKNOWN" else "unverified"
+        payload.hive.hive_id = "UNKNOWN"
+    if metadata is not None:
+        metadata["hive_identity"] = {
+            "status": status, "transcript_ids": sorted(ids), "model_hive_id": model_id,
+            "resolved_hive_id": None if status == "conflict" else payload.hive.hive_id,
+            "review_required": status != "verified",
+        }
+    if status == "conflict":
+        raise HiveIdentifierConflict("Model hive identifier conflicts with transcript")
     return payload
 
 
@@ -112,7 +128,7 @@ def ollama_extract(transcript: str, *, prompt_version: str = PROMPT_VERSION) -> 
                     error = ExtractionError(code="incomplete_response", message="Ollama generation did not finish")
                 else:
                     validation_started = perf_counter()
-                    payload = parse_payload(response_text, transcript)
+                    payload = parse_payload(response_text, transcript, metadata=metadata)
     except requests.Timeout:
         error = ExtractionError(code="timeout", message="Ollama request timed out")
     except requests.ConnectionError:
@@ -130,6 +146,8 @@ def ollama_extract(transcript: str, *, prompt_version: str = PROMPT_VERSION) -> 
             {"field": ".".join(map(str, e["loc"])), "type": e["type"]}
             for e in exc.errors(include_input=False)]
         error = ExtractionError(code="validation_error", message="Extracted fields failed schema validation")
+    except HiveIdentifierConflict:
+        error = ExtractionError(code="hive_id_conflict", message="Model hive identifier conflicts with transcript; review required")
     except (TypeError, ValueError):
         error = ExtractionError(code="invalid_structure", message="Invalid extraction structure or hive identifier")
     except Exception:

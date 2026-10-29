@@ -22,20 +22,46 @@ NUMBERS = {"jedan": 1, "jedna": 1, "jedno": 1, "dva": 2, "dve": 2,
            "dvadeset": 20, "trideset": 30, "cetrdeset": 40, "pedeset": 50,
            "sezdeset": 60, "sedamdeset": 70, "osamdeset": 80, "devedeset": 90,
            "sto": 100}
+ORDINALS = {}
 for number, stem in enumerate(
     ["prv", "drug", "trec", "cetvrt", "pet", "sest", "sedm", "osm", "devet", "deset"], 1
 ):
-    for ending in ("a", "o", "i"):
-        NUMBERS[stem + ending] = number
+    for ending in ("a", "o", "i", "u", "e", "og", "oga", "om", "ome", "oj",
+                   "eg", "ega", "em", "emu"):
+        ORDINALS[stem + ending] = number
+NUMBERS.update(ORDINALS)
 
 NUMBER_WORDS = "|".join(sorted(NUMBERS, key=len, reverse=True))
-NUMBER = rf"(?:h\s*-?\s*\d+|\d+|(?:{NUMBER_WORDS})(?:\s+(?:i\s+)?(?:{NUMBER_WORDS}))?)"
-HIVE = r"(?:drustvo|kosnica)"
-IDENTIFIER = re.compile(rf"\b{HIVE}\s+(?:broj\s+)?(?P<after>{NUMBER})\b|\b(?P<before>{NUMBER})\s+{HIVE}\b")
+ORDINAL_WORDS = "|".join(sorted(ORDINALS, key=len, reverse=True))
+H_NUMBER = r"h\s*[-‐‑–—]?\s*\d+"
+TENS = "|".join(word for word, n in NUMBERS.items() if 20 <= n < 100 and n % 10 == 0)
+UNITS = "|".join(sorted((word for word, n in NUMBERS.items() if n < 10), key=len, reverse=True))
+COMPOUND = rf"(?:{TENS})\s+(?:i\s+)?(?:{UNITS})"
+NUMBER = rf"(?:{H_NUMBER}|\d+|{COMPOUND}|{NUMBER_WORDS})"
+# Singular case forms, including accusative (opening a hive) and locative.
+HIVE = r"(?:drustv(?:o|a|u|om)|kosnic(?:a|u|e|i|om))"
+# A cardinal before the noun is a count ("tri društva"), not a label.
+ORDINAL = rf"(?:\d+\.|(?:(?:{TENS})\s+(?:i\s+)?)?(?:{ORDINAL_WORDS}))"
+AFTER_IDENTIFIER = rf"\b{HIVE}\s+(?:broj\s+)?(?P<after>{NUMBER})\b"
+BEFORE_IDENTIFIER = rf"\b(?P<before>{ORDINAL})\s+{HIVE}\b"
+IDENTIFIER = re.compile(AFTER_IDENTIFIER + "|" + BEFORE_IDENTIFIER)
+ADDITIONAL_ID = re.compile(rf"(?:\s+(?:i|ili)\s+|\s*[,/–—-]\s*)(?P<number>{NUMBER})\b")
+ORDINAL_LIST = re.compile(
+    rf"\b(?P<list>{ORDINAL}(?:(?:\s+(?:i|ili)\s+|\s*,\s*){ORDINAL})+)\s+{HIVE}\b"
+)
+UNPARSED_NUMBER = re.compile(rf"\s+(?:{NUMBER_WORDS}|\d+)\b")
+MEASUREMENT = re.compile(
+    r"\s*(?:°\s*c\b|%|(?:ram(?:a|ova|ovi)?|ulic(?:a|e|u)|stepen\w*|celzij\w*|"
+    r"c|kg|g|ml|l|dana?|dan|godin\w*|sati?|minut\w*|pcel\w*)\b)"
+)
+DATE_MONTH = re.compile(
+    r"\.?\s*(?:januar\w*|februar\w*|mart\w*|april\w*|maj\w*|jun\w*|jul\w*|"
+    r"avgust\w*|septemb\w*|oktob\w*|novemb\w*|decemb\w*)\b"
+)
 
 
 def _number(value: str) -> int | None:
-    digits = re.fullmatch(r"(?:h\s*-?\s*)?(\d+)", value)
+    digits = re.fullmatch(r"(?:h\s*[-‐‑–—]?\s*)?(\d+)\.?", value)
     if digits:
         number = int(digits.group(1))
         return number if number > 0 else None
@@ -51,9 +77,51 @@ def _number(value: str) -> int | None:
 
 def transcript_hive_ids(transcript: str) -> set[str]:
     text = plain_text(transcript)
-    matches = [m.group("after") or m.group("before") for m in IDENTIFIER.finditer(text)]
-    matches += re.findall(r"\bh\s*-?\s*\d+\b", text)
-    return {f"H{n}" for value in matches if (n := _number(value)) is not None}
+    ids = set()
+
+    def add(value, end):
+        # Adjacent units/dates distinguish "u košnici 3 rama" from "košnicu 3".
+        # Never take the integer prefix of a decimal, date or time as an ID.
+        tail = text[end:]
+        if re.match(r"[.,:]\d", tail):
+            return False
+        if not value.startswith("h") and (
+            MEASUREMENT.match(tail) or DATE_MONTH.match(tail) or UNPARSED_NUMBER.match(tail)
+        ):
+            return False
+        if (number := _number(value)) is not None:
+            ids.add(f"H{number}")
+            return True
+        return False
+
+    def add_after(value, end):
+        if not add(value, end):
+            return
+        # A shared noun still identifies multiple hives: "košnice 1 i 2".
+        while (additional := ADDITIONAL_ID.match(text, end)) is not None:
+            add(additional.group("number"), additional.end())
+            end = additional.end()
+
+    # Scan both orders independently so overlapping references cannot hide a conflict
+    # (e.g. "treća košnica broj četiri").
+    for match in re.finditer(AFTER_IDENTIFIER, text):
+        add_after(match.group("after"), match.end())
+    for match in re.finditer(BEFORE_IDENTIFIER, text):
+        value = match.group("before")
+        if value[0].isdigit():
+            prefix = text[:match.start("before")]
+            # "unos polena 2 od 3. Košnica je teška" ends a scale, not H3.
+            if not re.search(r"(?:^|[.!?;:\n])\s*$|\b(?:otvaram|pregledam|pregled|u|na|iz|kod)\s+$", prefix):
+                continue
+        add(value, match.end("before"))
+    for match in ORDINAL_LIST.finditer(text):
+        for ordinal in re.finditer(rf"\b{ORDINAL}(?=\s|,|$)", match.group("list")):
+            number = _number(ordinal.group())
+            if number is not None:
+                ids.add(f"H{number}")
+    for match in re.finditer(rf"\b{H_NUMBER}\b", text):
+        add_after(match.group(), match.end())
+    return ids
 
 
 def normalize_hive_id(value) -> str:

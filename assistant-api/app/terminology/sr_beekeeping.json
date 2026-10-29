@@ -63,7 +63,8 @@
       ],
       "asr_variants": {
         "uncertain": [
-          "zatvrno glijedla"
+          "zatvrno glijedla",
+          "zatvoranog legla"
         ]
       },
       "positive": [
@@ -329,6 +330,9 @@
         "contextual": [
           "matice vidjena",
           "matca"
+        ],
+        "uncertain": [
+          "makica vidjena"
         ]
       }
     },
@@ -357,7 +361,8 @@
       "uncertain": [
         "ima zasejenog",
         "ima sveže zasijanog",
-        "ima sveže zasejanog"
+        "ima sveže zasejanog",
+        "zasijanog"
       ]
     },
     "honey_frames": {

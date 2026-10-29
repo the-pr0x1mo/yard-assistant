@@ -178,3 +178,48 @@ def test_replay_rejects_wrapped_json_and_analysis_fields():
         replay('```json\n{}\n```', "")
     with pytest.raises(ValueError):
         replay({"hive": {"hive_id": "H1"}, "inspection": {"health_score": 100}}, "Košnica 1.")
+
+
+def test_absent_flags_hallucinated_zeros_are_reported_and_raw_output_is_retained(ollama):
+    case = next(c for c in CASES if c["id"] == "absent_flags")
+    unsupported = {"open_brood": 0, "queen_seen": 0}
+    raw = json.dumps({"hive": case["expected"]["hive"],
+                      "inspection": dict(case["expected"]["inspection"], **unsupported)})
+    ollama(raw)
+    result = services.ollama_extract(case["transcript"])
+    assert result.model_response == raw
+    comparison = compare_payload(result.payload, case)
+    assert not comparison["passed"]
+    assert comparison["unsupported_extractions"] == [
+        {"field": "inspection.open_brood", "actual": 0},
+        {"field": "inspection.queen_seen", "actual": 0}]
+    assert comparison["missing_facts"] == comparison["wrong_values"] == []
+
+
+@pytest.mark.parametrize("wrong_facts", [
+    {"queen_seen": 0}, {"queen_seen": 1}, {"eggs_seen": 1}, {"capped_brood": 1},
+])
+def test_log2_unclear_asr_is_not_scored_as_a_confirmed_observation(wrong_facts):
+    case = next(c for c in CASES if c["id"] == "log2_live_asr")
+    raw = {"hive": {"hive_id": None}, "inspection": {
+        **case["expected"]["inspection"], **wrong_facts,
+        "note": "; ".join(case["note_contains"])}}
+    actual = replay(raw, case["transcript"])
+    assert actual.hive.hive_id == "H3"
+    comparison = compare_payload(actual, case)
+    assert not comparison["passed"]
+    assert comparison["unsupported_extractions"] == [
+        {"field": f"inspection.{field}", "actual": value} for field, value in wrong_facts.items()]
+
+
+def test_cli_replay_reports_unrelated_negative_hallucinations(tmp_path, capsys):
+    case = next(c for c in CASES if c["id"] == "absent_flags")
+    raw = {"hive": case["expected"]["hive"], "inspection": {
+        **case["expected"]["inspection"], "open_brood": 0, "queen_seen": 0}}
+    path = tmp_path / "responses.json"
+    path.write_text(json.dumps({"absent_flags": raw}))
+    assert main(["--case", "absent_flags", "--responses", str(path)]) == 1
+    row = json.loads(capsys.readouterr().out)["runs"][0]["results"][0]
+    assert row["comparison"]["unsupported_extractions"] == [
+        {"field": "inspection.open_brood", "actual": 0},
+        {"field": "inspection.queen_seen", "actual": 0}]

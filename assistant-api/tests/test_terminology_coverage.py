@@ -195,3 +195,28 @@ def test_empty_placeholder_is_valid_and_emits_no_hints():
     dictionary = Terminology({"version": 2, "terms": {"temperature_c": {}, "note": {}}})
     assert dictionary.hints("Temperatura vazduha 15 stepeni.") == ""
     assert dictionary.normalize_value("temperature_c", "stepeni") is None
+
+
+def test_absent_flags_selects_only_the_observations_actually_mentioned():
+    text = ("Košnica 6. Nema deformisanih pčela, nema proliva, nema problema sa vlagom. "
+            "Nema znakova rojenja. Nastavak nisam dodao.")
+    hints = load_terminology().hints(text)
+    assert {line.split(":", 1)[0] for line in hints.splitlines()} == {
+        "deformed_bees", "diarrhea", "humidity_issue", "swarm_signs", "super_added"}
+    assert all(": negative=" in line for line in hints.splitlines())
+    # Independent observations keep their own policies in the presence of negatives.
+    assert 'positive=["ima larvi"]' in field_hint("open_brood", text + " Ima larvi.")
+    assert 'positive=["matica viđena"]' in field_hint("queen_seen", text + " Matica viđena.")
+    assert "negative=" not in field_hint("queen_seen", text + " Maticu nisam tražio.")
+
+
+@pytest.mark.parametrize("field,phrase,kind", [
+    ("capped_brood", "zatvoranog legla", "asr_uncertain"),
+    ("eggs_seen", "zasijanog", "uncertain"),
+    ("queen_seen", "makica vidjena", "asr_uncertain"),
+])
+def test_log2_asr_uncertainty_is_not_a_positive_or_negative_observation(field, phrase, kind):
+    hint = field_hint(field, phrase)
+    assert f'{kind}=["{phrase}"]' in hint
+    assert "positive=" not in hint and "negative=" not in hint
+    assert load_terminology().normalize_value(field, phrase) is None

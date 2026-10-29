@@ -104,7 +104,11 @@
           "diarrhea": 0,
           "humidity_issue": 0,
           "swarm_signs": 0,
-          "super_added": 0
+          "super_added": 0,
+          "open_brood": null,
+          "queen_seen": null,
+          "capped_brood": null,
+          "eggs_seen": null
         }
       }
     },
@@ -483,6 +487,93 @@
       "note_contains": [
         "Ima varoe"
       ]
+    },
+    {
+      "id": "unrelated_negative_only",
+      "transcript": "Košnica 6. Nema proliva. Nastavak nisam dodao.",
+      "expected": {
+        "hive": {"hive_id": "H6"},
+        "inspection": {
+          "diarrhea": 0,
+          "super_added": 0,
+          "open_brood": null,
+          "queen_seen": null,
+          "eggs_seen": null,
+          "capped_brood": null
+        }
+      }
+    },
+    {
+      "id": "unrelated_negatives_with_positive_brood_and_queen",
+      "transcript": "Košnica 6. Nema deformisanih pčela, nema proliva, nema problema sa vlagom. Nema znakova rojenja. Nastavak nisam dodao. Ima larvi. Matica viđena.",
+      "expected": {
+        "hive": {"hive_id": "H6"},
+        "inspection": {
+          "deformed_bees": 0,
+          "diarrhea": 0,
+          "humidity_issue": 0,
+          "swarm_signs": 0,
+          "super_added": 0,
+          "open_brood": 1,
+          "queen_seen": 1,
+          "eggs_seen": null,
+          "capped_brood": null
+        }
+      }
+    },
+    {
+      "id": "unrelated_negatives_with_unchecked_brood_and_queen",
+      "transcript": "Košnica 6. Nema proliva, nema problema sa vlagom. Larve nisam proveravao. Maticu nisam tražio.",
+      "expected": {
+        "hive": {"hive_id": "H6"},
+        "inspection": {
+          "diarrhea": 0,
+          "humidity_issue": 0,
+          "open_brood": null,
+          "queen_seen": null
+        }
+      }
+    },
+    {
+      "id": "log2_live_asr",
+      "transcript": "Danas je 29. oktober 226 godine temperatura 23°C. Celzijos ovih otvaram košnicu 3. Stanje u košnici deluje dobro. Temperament čele su mirne. 3 rama sa leglom, 4 rama sa medom, ima zatvoranog legla, ima larvi, ima zasijanog makica vidjena.",
+      "expected": {
+        "hive": {"hive_id": "H3"},
+        "inspection": {
+          "temperature_c": 23,
+          "behavior": "mirne",
+          "brood_frames": 3,
+          "honey_frames": 4,
+          "open_brood": 1,
+          "capped_brood": null,
+          "eggs_seen": null,
+          "queen_seen": null
+        }
+      },
+      "note_contains": ["zatvoranog legla", "zasijanog", "makica vidjena"]
+    },
+    {
+      "id": "accusative_hive_identity",
+      "transcript": "Celzijos ovih otvaram košnicu 3.",
+      "expected": {"hive": {"hive_id": "H3"}, "inspection": {}}
+    },
+    {
+      "id": "ordinal_neuter_hive_identity",
+      "transcript": "Pregledam treće društvo.",
+      "expected": {"hive": {"hive_id": "H3"}, "inspection": {}}
+    },
+    {
+      "id": "shared_noun_multiple_identifiers",
+      "transcript": "Košnice 3 i 4. Ima larvi.",
+      "expected": {"hive": {"hive_id": "UNKNOWN"}, "inspection": {"open_brood": 1}}
+    },
+    {
+      "id": "unrelated_numbers_no_identity",
+      "transcript": "Danas je 29. oktobar 2026. Temperatura 23°C. Tri rama sa leglom, četiri rama sa medom.",
+      "expected": {
+        "hive": {"hive_id": "UNKNOWN"},
+        "inspection": {"temperature_c": 23, "brood_frames": 3, "honey_frames": 4}
+      }
     }
   ]
 }
