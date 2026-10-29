@@ -32,9 +32,9 @@
           <th>Type</th>
           <th>Strength</th>
           <th>Reserves</th>
-          <th>Action</th>
-          <th>Score</th>
-          <th>Risk</th>
+          <th>Actions taken</th>
+          <th>Brood frames</th>
+          <th>Review</th>
           <th>Note</th>
         </tr>
       </thead>
@@ -45,9 +45,9 @@
           <td>{{ item.inspection_type or "-" }}</td>
           <td>{{ item.beekeeper_strength or "-" }}</td>
           <td>{{ item.reserves_estimate or "-" }}</td>
-          <td>{{ item.recommended_action or "-" }}</td>
-          <td>{{ item.strength_score if item.strength_score is not none else "-" }}</td>
-          <td>{{ item.swarm_risk or "-" }}</td>
+          <td>{{ item.actions_taken or "-" }}</td>
+          <td>{{ item.brood_frames if item.brood_frames is not none else "-" }}</td>
+          <td><a href="/logs/{{ item.raw_log_id }}">{{ item.confirmation_status }}</a></td>
           <td>{{ item.note or "-" }}</td>
         </tr>
         {% endfor %}

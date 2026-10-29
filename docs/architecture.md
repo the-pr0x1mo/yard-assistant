@@ -2,6 +2,9 @@
 
 Yard Assistant is a self-hosted, voice-first beekeeping logbook. It uses a server-side rendered UI for simple dashboard pages and a local AI pipeline for converting audio notes into structured inspection records.
 
+The current lifecycle and schema are documented in [YA-01](ya-01.md).
+The diagram below is conceptual; durable source storage occurs **before** Ollama.
+
 ## High-Level Architecture
 
 ![Yard Assistant architecture](./architecture-diagram.png)
@@ -13,7 +16,7 @@ POST requests upload audio notes to FastAPI. The backend passes audio to Whisper
 The MVP treats the raw transcript as the source of truth. The raw audit log is
 written first, and the normalized inspection insert is best effort. This keeps
 the original spoken note available even when structured extraction fails or
-produces low-confidence data.
+produces invalid data.
 
 ## Request Flow
 
@@ -60,6 +63,9 @@ Whisper STT
     |
     | transcript text
     v
+SQLite: commit source audio + transcript
+    |
+    v
 Ollama / Llama
     |
     | structured JSON
@@ -86,10 +92,10 @@ For a step-by-step walkthrough of the ingestion flow, see [Life of a Voice Log](
 
 ## Data Reliability Notes
 
-- `hive_logs` preserves the raw transcript and parsed JSON payload for audit and
+- `hive_logs` preserves source audio, the raw transcript and processing statuses for audit and
   recovery.
-- `inspections` and `inspection_metrics` store normalized records derived from
-  the transcript.
+- `extraction_attempts` preserves model responses and validated candidates;
+  `inspections` stores the committed factual observations with explicit source linkage.
 - Structured extraction is experimental, especially for Serbian beekeeping
   terminology, so downstream views should treat normalized fields as editable or
   reviewable data rather than guaranteed facts.

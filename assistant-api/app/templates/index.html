@@ -34,7 +34,8 @@
 
   <div class="actions">
     <a class="btn" href="/export/json">Export JSON</a>
-    <a class="btn" href="/export/csv">Export CSV</a>
+    <a class="btn" href="/export/csv">Latest hives CSV</a>
+    <a class="btn" href="/export/inspections.csv">All inspections CSV</a>
     <a class="btn" href="/export/sqlite">Download DB</a>
   </div>
 </section>
@@ -66,6 +67,7 @@
   </ul>
 </section>
 
+<script src="/static/voice-result.js"></script>
 <script>
   (() => {
     const startBtn = document.getElementById("record-start");
@@ -160,16 +162,17 @@
           body: formData
         });
 
-        if (response.ok) {
-          setStatus("Saved successfully. Check Transcripts or Inspections.", "success");
+        const data = await response.json();
+        if (data.id) {
+          const result = window.describeVoiceResult(data);
+          setStatus(result.message, result.type);
           recordedBlob = null;
         } else {
-          const errorText = await response.text();
-          setStatus(`Upload failed: API returned ${response.status}. ${errorText.slice(0, 120)}`, "error");
+          setStatus(data.detail || `Upload failed: API returned ${response.status}.`, "error");
           sendBtn.disabled = false;
         }
       } catch (err) {
-        setStatus(`Upload failed: ${err.message || err.name || "network/browser error"}`, "error");
+        setStatus(`Request failed. Check Transcripts before uploading again. ${err.message || ""}`, "error");
         sendBtn.disabled = false;
       }
     });
