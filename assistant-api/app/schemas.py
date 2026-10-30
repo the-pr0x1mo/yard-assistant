@@ -1,4 +1,6 @@
 """Factual extraction contract. Missing observations are null, never estimates."""
+import re
+from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -79,3 +81,46 @@ class ExtractionResult(StrictModel):
     error: ExtractionError | None = None
     model_response: str | None = None
     metadata: dict = Field(default_factory=dict)
+
+
+class HiveSelection(StrictModel):
+    # Human-selected IDs are exact keys, independent of AI spoken-number normalization.
+    hive_id: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
+    name: str | None = Field(default=None, max_length=200)
+    create: bool = False
+
+    @field_validator("hive_id")
+    @classmethod
+    def identified(cls, value):
+        if value.upper() == "UNKNOWN":
+            raise ValueError("Select an identified hive")
+        return value
+
+
+class InspectionCorrection(StrictModel):
+    inspected_at: str
+    inspection: InspectionData
+
+    @field_validator("inspected_at")
+    @classmethod
+    def valid_date(cls, value):
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?", value):
+            raise ValueError("Use an ISO inspection date/time")
+        datetime.fromisoformat(value)
+        return value.replace("T", " ")
+
+    @field_validator("inspection")
+    @classmethod
+    def sqlite_integers(cls, value):
+        if any(isinstance(v, int) and v > 9223372036854775807 for v in value.model_dump().values()):
+            raise ValueError("Integer exceeds SQLite range")
+        return value
+
+
+class ReviewConfirmation(InspectionCorrection):
+    review_token: str = Field(min_length=1, max_length=2_000_000)
+    hive: HiveSelection
+
+
+class HiveRename(StrictModel):
+    name: str | None = Field(max_length=200)

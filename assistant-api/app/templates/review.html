@@ -1,68 +1,30 @@
 {% extends "base.html" %}
-{% block title %}Review log {{ result.id }} | Yard Assistant{% endblock %}
+{% block title %}Provera pregleda | Yard Assistant{% endblock %}
 {% block content %}
+<section class="card" id="review-card"></section>
+<script id="inspection-data" type="application/json">{{ result | tojson }}</script>
+<script src="/static/review-card.js"></script>
+{% if result.inspection %}
+<script>window.showReviewCard(JSON.parse(document.getElementById('inspection-data').textContent)).catch(error => { document.getElementById('review-card').textContent = error.message; });</script>
+{% else %}
 <section class="card">
-  <h2>Log #{{ result.id }}</h2>
-  <p>Extraction: {{ result.extraction_status }} · Persistence: {{ result.normalization_status }}</p>
-  {% if result.error %}<p role="alert">{{ result.error.code }}: {{ result.error.message }}</p>{% endif %}
-  <h3>Original Whisper transcript</h3>
-  <pre>{{ result.preview.raw_transcript }}</pre>
-  <a href="/api/logs/{{ result.id }}/audio">Download original audio (if recorded)</a>
-</section>
-<section class="card">
-  <h3>Persisted inspection</h3>
-  {% if result.inspection %}
-  <p>Review: {{ result.inspection.confirmation_status }}</p>
-  <dl class="kv">
-  {% for key, value in result.inspection.items() %}
-    <dt>{{ key }}</dt><dd>{{ value if value is not none else 'Unknown / not stated' }}</dd>
-  {% endfor %}
-  </dl>
-  {% if result.inspection.confirmation_status == 'unreviewed' %}
-  <button type="button" id="confirm">Confirm reviewed facts</button>
-  {% endif %}
-  {% else %}
-  <p>No normalized inspection saved. The original transcript remains available.</p>
-  <button type="button" id="retry">Reprocess saved transcript</button>
-  {% endif %}
+  <p>Prethodni zapis bez inspekcije. Transkript ostaje neizmenjen.</p>
+  <details><summary>Originalni Whisper transkript</summary><pre>{{ result.preview.raw_transcript }}</pre></details>
+  <button id="retry" type="button">Pripremi karticu iz starog transkripta</button>
   <p id="action-status" role="status"></p>
 </section>
-<section class="card">
-  <h3>Extraction attempts</h3>
-  {% for attempt in result.attempts %}
-  <details>
-    <summary>Attempt #{{ attempt.attempt_id }} · {{ attempt.status }} · {{ attempt.started_at }}</summary>
-    <p>{{ attempt.error_code or '' }} {{ attempt.error_message or '' }}</p>
-    <h4>Model output</h4><pre>{{ attempt.model_response }}</pre>
-    <h4>Validated extraction</h4><pre>{{ attempt.payload_json }}</pre>
-    <h4>Metadata</h4><pre>{{ attempt.metadata_json }}</pre>
-  </details>
-  {% endfor %}
-</section>
 <script>
-(() => {
-  const status = document.getElementById('action-status');
-  async function post(button, url) {
-    button.disabled = true;
-    status.textContent = 'Processing…';
-    try {
-      const response = await fetch(url, {method: 'POST'});
-      const data = await response.json();
-      if (!response.ok || data.status === 'failed' || data.status === 'pending') {
-        status.textContent = data.error?.message || data.detail || 'Processing is incomplete.';
-        button.disabled = false;
-        return;
-      }
-      location.reload();
-    } catch (error) {
-      status.textContent = 'Request failed. Reload to check the saved status before retrying.';
-      button.disabled = false;
-    }
-  }
-  const confirm = document.getElementById('confirm');
-  if (confirm) confirm.addEventListener('click', () => post(confirm, '/api/inspections/{{ result.inspection.inspection_id if result.inspection else 0 }}/confirm'));
-  const retry = document.getElementById('retry');
-  if (retry) retry.addEventListener('click', () => post(retry, '/api/logs/{{ result.id }}/reprocess'));
-})();
+document.getElementById('retry').onclick = async function () {
+  if (!window.canReplaceReview()) return;
+  this.disabled = true;
+  try {
+    const response = await fetch('/api/logs/{{ result.id }}/reprocess', {method:'POST'});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'Obrada nije uspela.');
+    await window.showReviewCard(data);
+  } catch (error) { document.getElementById('action-status').textContent = error.message; }
+  finally { this.disabled = false; }
+};
 </script>
+{% endif %}
 {% endblock %}

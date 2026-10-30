@@ -1,0 +1,23 @@
+{% for item in inspections %}
+<article class="card">
+  <h3>{{ item.hive_name or 'Košnica' }} · ID: {{ item.hive_id }}</h3>
+  <p>Datum pregleda: {{ item.inspected_at }} · Potvrđeno</p>
+  <dl class="kv">
+  {% for key in compact_fields %}
+    <dt>{{ field_labels[key] }}</dt>
+    <dd>{% if key in flag_fields %}{{ 'Nepoznato' if item[key] is none else 'Da' if item[key] == 1 else 'Ne' }}{% else %}{{ item[key] if item[key] is not none else 'Nepoznato' }}{% endif %}</dd>
+  {% endfor %}
+  </dl>
+  <details><summary>Proširi / skupi detalje pregleda</summary>
+  {% for group, keys in field_groups.items() %}
+    <h4>{{ group }}</h4><dl class="kv">
+    {% for key in keys %}
+      <dt>{{ field_labels[key] }}</dt>
+      <dd>{% if key in flag_fields %}{{ 'Nepoznato' if item[key] is none else 'Da' if item[key] == 1 else 'Ne' }}{% else %}{{ item[key] if item[key] is not none else 'Nepoznato' }}{% endif %}</dd>
+    {% endfor %}</dl>
+  {% endfor %}
+  </details>
+  <details><summary>Originalni Whisper transkript (samo čitanje)</summary><pre>{{ item.raw_transcript }}</pre></details>
+  <a href="/logs/{{ item.raw_log_id }}">Uredi pregled #{{ item.inspection_id }}</a>
+</article>
+{% else %}<section class="card"><p>Nema potvrđenih pregleda.</p></section>{% endfor %}

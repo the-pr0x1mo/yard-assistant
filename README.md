@@ -28,12 +28,12 @@ try to turn that transcript into useful structured records.
 - Browser-based voice recording and audio upload
 - Local speech-to-text transcription with Whisper
 - Local LLM-based extraction through Ollama
-- Raw transcript storage as an audit trail
+- Original transcripts retained only with explicit inspection confirmation
 - Strict factual extraction with visible failure states and linked SQLite records
-- Source audio, original transcripts and extraction attempt history
-- Review and confirmation of extracted facts
+- Temporary audio processing; confirmed transcripts and extraction metadata
+- Editable review cards, explicit confirmation and correction of saved inspections
 - Server-rendered dashboard pages for hives, inspections, transcripts, and stats
-- Historical inspection CSV, latest-hive CSV, complete JSON and SQLite snapshots
+- Approved inspection CSV/JSON, latest-hive CSV and audio-free SQLite snapshots
 
 ## Architecture
 
@@ -54,15 +54,24 @@ request flow, and component responsibilities.
 
 1. A beekeeper records an inspection note in the browser.
 2. The backend transcribes the audio with Whisper.
-3. The raw transcript is stored in SQLite.
-4. The transcript is sent to a local LLM for experimental structured extraction.
-5. Validated structured data is saved when possible and displayed in the UI.
+3. Ollama attempts factual extraction; the browser displays an ephemeral review card.
+4. The beekeeper selects a hive and reviews or fills structured fields.
+5. Explicit confirmation atomically stores the original transcript, extraction
+   attempt and approved inspection. Audio is never retained.
+6. Saved inspections can be corrected in place while their original transcript
+   and stable hive/source links remain unchanged.
 
-Raw transcript storage is currently the most reliable and important part of the
-MVP. Even when structured extraction is incomplete or wrong, the original spoken
-note remains available and attached to the detected hive record.
+Failed extraction still permits manual review when Whisper produced valid text.
+Unconfirmed cards are lost on navigation, reload or discard.
 
-## YA-01 development setup
+## YA-02 review and correction
+
+See [YA-02](docs/ya-02.md) for API changes, existing v2 database compatibility,
+verified audio cleanup, tests, browser checklist, deployment and rollback.
+The same database path and schema are retained; no migration or initialization
+is required for existing v2 databases.
+
+## Initial development setup
 
 See [the extraction and database guide](docs/ya-01.md) for the v2 factual contract,
 explicit database initialization, deterministic test-data seed, separate development
@@ -84,8 +93,8 @@ Current limitations:
 
 - Serbian beekeeping terminology is not reliably recognized or normalized yet.
 - Hive and colony names should be spoken consistently for best results.
-- Structured fields may be incomplete, incorrect, or low confidence.
-- Extracted inspections start unreviewed; confirmation is available, field editing is deferred.
+- Structured fields may be incomplete or incorrect; review them before confirmation.
+- Open review cards are intentionally temporary; confirm before leaving the page.
 - Authentication is expected to be handled by the deployment environment, such
   as tailnet access.
 - Deterministic tests mock Whisper/Ollama; live-model accuracy still needs manual checks.

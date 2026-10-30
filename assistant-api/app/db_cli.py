@@ -8,7 +8,7 @@ from contextlib import closing
 from pathlib import Path
 
 from app import db
-from app.schemas import ExtractionResult
+from app.schemas import ExtractionResult, ReviewConfirmation
 from app.services import parse_payload
 
 SEED_TRANSCRIPT = """Društvo broj 1. Stanju košnici mirno,
@@ -27,18 +27,20 @@ def seed():
     if db.query("SELECT COUNT(*) AS n FROM hive_logs")[0]["n"]:
         raise RuntimeError("Seed requires an empty database; nothing changed")
     fixture_time = "2026-01-15 10:00:00"
-    log_id = db.save_raw_hive_log(SEED_TRANSCRIPT, created_at=fixture_time, metadata={"source": "synthetic_seed"})
-    attempt_id = db.start_attempt(log_id)
     payload = parse_payload(json.dumps(SEED_FACTS, ensure_ascii=False), SEED_TRANSCRIPT)
     result = ExtractionResult(status="completed", payload=payload,
                               model_response=json.dumps(SEED_FACTS, ensure_ascii=False),
                               metadata={"source": "synthetic_seed", "model": "fixture", "prompt_version": "hive_semantics_v2"})
-    db.record_extraction(log_id, attempt_id, result)
-    db.save_normalized_entry(log_id, attempt_id, payload)
+    approved = ReviewConfirmation(review_token="synthetic", inspected_at=fixture_time,
+        hive={"hive_id": "H1", "create": True}, inspection=payload.inspection)
+    inspection_id = db.save_review({"review_id": "synthetic-seed", "transcript": SEED_TRANSCRIPT,
+        "created_at": fixture_time, "whisper_metadata": {"source": "synthetic_seed"},
+        "extraction": result.model_dump()}, approved)
+    log_id = db.query("SELECT raw_log_id FROM inspections WHERE inspection_id=?", (inspection_id,))[0]["raw_log_id"]
     # Make fixture exports reproducible, including operational timestamps.
     with db.connection() as conn:
         conn.execute("UPDATE hives SET created_at=?", (fixture_time,))
-        conn.execute("UPDATE inspections SET created_at=?", (fixture_time,))
+        conn.execute("UPDATE inspections SET created_at=?, confirmed_at=?", (fixture_time, fixture_time))
         conn.execute("UPDATE extraction_attempts SET started_at=?, finished_at=?", (fixture_time, fixture_time))
     return log_id
 
@@ -71,6 +73,33 @@ def reset_database(backup):
         fresh.unlink(missing_ok=True)
 
 
+def cleanup_audio(backup):
+    """Explicit logical removal, after verifying a consistent full database backup."""
+    db.check_schema()
+    backup = Path(backup).resolve()
+    if backup.exists() or backup == Path(db.DB_PATH).resolve():
+        raise RuntimeError("Backup destination must be a new file")
+    db.backup_database(backup)
+    with db.connection() as source:
+        source.execute("BEGIN IMMEDIATE")
+        with closing(sqlite3.connect(backup.as_uri() + "?mode=ro", uri=True)) as saved:
+            if saved.execute("PRAGMA integrity_check").fetchall() != [("ok",)]:
+                raise RuntimeError("Backup integrity verification failed; audio unchanged")
+            if saved.execute("PRAGMA foreign_key_check").fetchall():
+                raise RuntimeError("Backup foreign key verification failed; audio unchanged")
+            source_schema = [tuple(r) for r in source.execute("SELECT type,name,tbl_name,sql FROM sqlite_master ORDER BY name")]
+            if source_schema != saved.execute("SELECT type,name,tbl_name,sql FROM sqlite_master ORDER BY name").fetchall():
+                raise RuntimeError("Backup schema verification failed; audio unchanged")
+            for table in ('hives', 'hive_logs', 'extraction_attempts', 'inspections', 'sqlite_sequence'):
+                original = [tuple(r) for r in source.execute(f"SELECT * FROM {table} ORDER BY rowid")]
+                if original != saved.execute(f"SELECT * FROM {table} ORDER BY rowid").fetchall():
+                    raise RuntimeError("Database changed since backup; stop API and retry with a new backup")
+            if saved.execute("PRAGMA user_version").fetchone()[0] != db.SCHEMA_VERSION:
+                raise RuntimeError("Backup version verification failed; audio unchanged")
+        count = source.execute("UPDATE hive_logs SET audio_bytes=NULL, audio_content_type=NULL WHERE audio_bytes IS NOT NULL OR audio_content_type IS NOT NULL").rowcount
+    return count
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", help="Explicit database file (overrides DB_PATH/DATABASE_PATH)")
@@ -86,6 +115,10 @@ def main(argv=None):
     reset.add_argument("--backup", required=True)
     recover = sub.add_parser("recover-pending", help="Mark interrupted attempts failed; API must be stopped")
     recover.add_argument("--api-stopped", action="store_true", required=True)
+    cleanup = sub.add_parser("cleanup-audio", help="Back up, verify and remove existing audio BLOB values only")
+    cleanup.add_argument("--api-stopped", action="store_true", required=True)
+    cleanup.add_argument("--confirm-remove-audio", action="store_true", required=True)
+    cleanup.add_argument("--backup", required=True)
     args = parser.parse_args(argv)
     if args.db:
         db.DB_PATH = args.db
@@ -101,6 +134,8 @@ def main(argv=None):
         elif args.command == "recover-pending":
             db.check_schema()
             print(f"Recovered {db.recover_pending()} interrupted attempts")
+        elif args.command == "cleanup-audio":
+            print(f"Removed audio from {cleanup_audio(args.backup)} logs; verified backup: {args.backup}")
         elif args.command == "backup":
             if Path(args.destination).exists():
                 raise RuntimeError("Backup destination already exists")

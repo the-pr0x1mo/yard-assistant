@@ -1,45 +1,35 @@
 {% extends "base.html" %}
-{% block title %}Voice | Yard Assistant{% endblock %}
+{% block title %}Glasovni pregled | Yard Assistant{% endblock %}
 {% block content %}
 <section class="card">
-  <h2>Upload Voice Note</h2>
-  <p>The original audio and transcript are saved before factual extraction.</p>
-  <form id="voice-upload" action="/api/voice" method="post" enctype="multipart/form-data" class="form-stack">
-    <label for="file">Audio file (up to 32 MiB)</label>
+  <h2>Otpremi glasovnu belešku</h2>
+  <p>Audio se koristi privremeno. Podaci se čuvaju tek kada potvrdite pregled.</p>
+  <form id="voice-upload" class="form-stack">
+    <label for="file">Audio datoteka (do 32 MiB)</label>
     <input id="file" name="file" type="file" accept="audio/*" required>
-    <button type="submit">Upload and process</button>
+    <button type="submit">Pripremi karticu za proveru</button>
   </form>
   <p id="upload-status" role="status"></p>
-  <a id="review-link" hidden>Review saved log</a>
 </section>
-<script src="/static/voice-result.js"></script>
+<section class="card" id="review-card" aria-live="polite"></section>
+<script src="/static/review-card.js"></script>
 <script>
 (() => {
   const form = document.getElementById('voice-upload');
   const status = document.getElementById('upload-status');
-  const link = document.getElementById('review-link');
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    const button = form.querySelector('button');
-    button.disabled = true;
-    link.hidden = true;
-    status.textContent = 'Uploading and processing…';
+    if (!window.canReplaceReview()) return;
+    const button = form.querySelector('button'); button.disabled = true;
+    status.textContent = 'Transkripcija i izdvajanje podataka…';
     try {
-      const response = await fetch(form.action, {method: 'POST', body: new FormData(form)});
+      const response = await fetch('/api/voice', {method: 'POST', body: new FormData(form)});
       const data = await response.json();
-      if (data.id) {
-        const result = window.describeVoiceResult(data);
-        status.textContent = result.message;
-        link.href = `/logs/${data.id}`;
-        link.hidden = false;
-      } else {
-        status.textContent = data.detail || 'Upload failed; no saved record was returned.';
-      }
-    } catch (error) {
-      status.textContent = 'Request failed. Check Transcripts before uploading again.';
-    } finally {
-      button.disabled = false;
-    }
+      if (!response.ok) throw new Error(data.detail || 'Priprema kartice nije uspela.');
+      await window.showReviewCard(data);
+      form.reset(); status.textContent = 'Proverite karticu i potvrdite čuvanje.';
+    } catch (error) { status.textContent = error.message; }
+    finally { button.disabled = false; }
   });
 })();
 </script>

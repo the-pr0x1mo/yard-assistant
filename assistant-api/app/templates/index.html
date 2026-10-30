@@ -6,8 +6,7 @@
 <section class="card">
   <h2>Welcome</h2>
   <p>
-    This app transcribes hive inspection audio and stores both raw transcript logs and
-    structured inspection data in SQLite.
+    Snimite pregled, proverite izdvojene podatke i izričito potvrdite čuvanje.
   </p>
 </section>
 
@@ -67,7 +66,8 @@
   </ul>
 </section>
 
-<script src="/static/voice-result.js"></script>
+<section class="card" id="review-card" aria-live="polite"></section>
+<script src="/static/review-card.js"></script>
 <script>
   (() => {
     const startBtn = document.getElementById("record-start");
@@ -149,6 +149,7 @@
         return;
       }
 
+      if (!window.canReplaceReview()) return;
       setStatus("Uploading...", "info");
       sendBtn.disabled = true;
 
@@ -163,16 +164,17 @@
         });
 
         const data = await response.json();
-        if (data.id) {
-          const result = window.describeVoiceResult(data);
-          setStatus(result.message, result.type);
+        if (response.ok && data.review_token) {
+          await window.showReviewCard(data);
+          setStatus('Proverite karticu i potvrdite čuvanje.', 'success');
           recordedBlob = null;
+          recordedChunks = [];
         } else {
           setStatus(data.detail || `Upload failed: API returned ${response.status}.`, "error");
           sendBtn.disabled = false;
         }
       } catch (err) {
-        setStatus(`Request failed. Check Transcripts before uploading again. ${err.message || ""}`, "error");
+        setStatus(`Priprema kartice nije uspela; pokušajte ponovo. ${err.message || ""}`, "error");
         sendBtn.disabled = false;
       }
     });

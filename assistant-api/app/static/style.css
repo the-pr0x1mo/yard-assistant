@@ -232,3 +232,9 @@ code {
 .status-info {
   color: #6b7280;
 }
+.review-fields { border: 0; padding: 0; min-width: 0; }
+.review-fields label { display: flex; flex-direction: column; gap: .3rem; margin: .8rem 0; }
+.review-fields input, .review-fields select, .review-fields textarea { width: 100%; box-sizing: border-box; padding: .55rem; font: inherit; }
+.review-fields summary, .card summary { cursor: pointer; padding: .6rem 0; }
+.card pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+#review-card:empty { display: none; }

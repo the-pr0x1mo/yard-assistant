@@ -1,7 +1,10 @@
-// HTTP success alone does not mean a normalized inspection was saved.
+// Compatibility helper for callers that describe upload responses.
 window.describeVoiceResult = function (data) {
-  if (data.status === 'completed' && data.normalization_status === 'completed') {
-    return {message: `Inspection saved from log #${data.id}. Review the extracted facts before confirming.`, type: 'success'};
+  if (data.status === 'review') {
+    return {message: 'Kartica je pripremljena. Proverite podatke i potvrdite čuvanje.', type: 'info'};
   }
-  return {message: `Transcript saved as log #${data.id}. ${data.error?.message || 'Processing is incomplete.'} Open Transcripts to review or reprocess.`, type: 'error'};
+  if (data.confirmation_status === 'confirmed') {
+    return {message: `Pregled #${data.inspection_id} je potvrđen.`, type: 'success'};
+  }
+  return {message: data.error?.message || 'Pregled nije potvrđen.', type: 'error'};
 };

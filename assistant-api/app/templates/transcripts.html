@@ -4,8 +4,8 @@
 
 {% block content %}
 <section class="card">
-  <h2>Raw Transcript Logs</h2>
-  <p class="muted">Recent entries from <code>hive_logs</code> for operational debugging.</p>
+  <h2>Originalni transkripti</h2>
+  <p class="muted">Potvrđeni pregledi i raniji YA-01 zapisi za ručnu proveru. Nove nepotvrđene kartice se ne čuvaju.</p>
 </section>
 
 {% if logs %}
@@ -15,13 +15,9 @@
     <p class="muted">{{ item.created_at }}</p>
     <p>Extraction: {{ item.extraction_status }} · Persistence: {{ item.normalization_status }} · Review: {{ item.confirmation_status or 'not available' }}</p>
     {% if item.error_code %}<p role="alert">{{ item.error_code }}: {{ item.error_message }}</p>{% endif %}
-    <a href="/logs/{{ item.id }}">Review log and processing attempts</a>
-    <h4>Transcript</h4>
-    <pre>{{ item.raw_transcript }}</pre>
-    <details>
-      <summary>Parsed JSON</summary>
-      <pre>{{ item.data_json }}</pre>
-    </details>
+    <a href="/logs/{{ item.id }}">Pregledaj ili ispravi strukturirane podatke</a>
+    <details><summary>Originalni Whisper transkript (samo čitanje)</summary><pre>{{ item.raw_transcript }}</pre></details>
+
   </section>
   {% endfor %}
 {% else %}

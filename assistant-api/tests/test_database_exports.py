@@ -1,4 +1,3 @@
-import base64
 import csv
 import io
 import json
@@ -10,7 +9,17 @@ from fastapi.testclient import TestClient
 
 from app import db, main
 from app.db_cli import main as cli, reset_database, seed, SEED_TRANSCRIPT
-from app.pipeline import process_log
+from app.pipeline import process_log as prepare_log, read_review
+from app.schemas import ReviewConfirmation
+
+
+def process_log(log_id):
+    review = prepare_log(log_id)
+    hive_id = review["preview"]["structured"]["hive"]["hive_id"]
+    body = ReviewConfirmation(review_token=review["review_token"], inspected_at=review["inspected_at"],
+        hive={"hive_id": hive_id, "create": db.get_hive(hive_id) is None},
+        inspection=review["preview"]["structured"]["inspection"])
+    return db.save_review(read_review(review["review_token"]), body)
 
 
 def test_initialization_repeatable_and_existing_records_unchanged(database):
@@ -98,14 +107,15 @@ def test_sqlite_constraints_and_atomic_rollback(database, ollama):
     assert db.list_recent_inspections()[0]["brood_frames"] == 4
 
 
-def test_json_complete_history_audio_and_metadata(client, ollama):
+def test_json_approved_history_without_audio_and_with_metadata(client, ollama):
     ollama()
     log_id = db.save_raw_hive_log(SEED_TRANSCRIPT, audio_bytes=b'original', audio_content_type='audio/webm', metadata={'duration_ms': 12})
     process_log(log_id)
     data = client.get('/export/json').json()
     assert data["schema_version"] == 2
     assert data["hive_logs"][0]["raw_transcript"] == SEED_TRANSCRIPT
-    assert base64.b64decode(data["hive_logs"][0]["audio_base64"]) == b"original"
+    assert "audio_base64" not in data["hive_logs"][0]
+    assert "audio_bytes" not in data["hive_logs"][0]
     assert data["inspections"][0]["raw_log_id"] == log_id
     assert data["extraction_attempts"][0]["model_response"]
     assert json.loads(data["extraction_attempts"][0]["metadata_json"])["prompt_eval_count"] == 50
@@ -124,7 +134,7 @@ def test_csv_all_history_vs_latest_snapshot(client, ollama):
     assert len({r['inspection_id'] for r in rows}) == 3
     assert len({r['raw_log_id'] for r in rows}) == 3
     assert rows[0]['brood_frames'] == '4'
-    assert rows[0]['confirmation_status'] == 'unreviewed'
+    assert rows[0]['confirmation_status'] == 'confirmed'
     assert rows[0]['extraction_status'] == 'completed'
     assert rows[0]['inspection_type'] == ''
     latest = client.get('/export/csv')
@@ -175,3 +185,45 @@ def test_empty_exports_and_pages(client):
     seed()
     for route in ['/hives', '/inspections', '/transcripts', '/stats', '/hives/H1', '/logs/1']:
         assert client.get(route).status_code == 200, route
+
+
+def test_audio_cleanup_verified_wal_backup_and_export_scrubbing(client, database):
+    from app.db_cli import cleanup_audio
+    seed()
+    with db.connection() as conn:
+        conn.execute('PRAGMA journal_mode=WAL')
+        conn.execute("UPDATE hive_logs SET audio_bytes=?, audio_content_type='audio/webm'", (b'legacy audio',))
+    snapshot = database / 'normal-export.sqlite'
+    snapshot.write_bytes(client.get('/export/sqlite').content)
+    with sqlite3.connect(snapshot) as conn:
+        assert conn.execute('SELECT audio_bytes FROM hive_logs').fetchone()[0] is None
+    assert db.query('SELECT audio_bytes FROM hive_logs')[0]['audio_bytes'] == b'legacy audio'
+    backup = database / 'verified-backup.sqlite'
+    assert cleanup_audio(backup) == 1
+    with sqlite3.connect(backup) as conn:
+        assert conn.execute('SELECT audio_bytes FROM hive_logs').fetchone()[0] == b'legacy audio'
+        assert conn.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
+    assert db.get_log(1)['raw_transcript'] == SEED_TRANSCRIPT
+    assert len(db.list_recent_inspections()) == 1
+    assert db.query('SELECT audio_bytes FROM hive_logs')[0]['audio_bytes'] is None
+    with pytest.raises(RuntimeError, match='new file'):
+        cleanup_audio(backup)
+    with pytest.raises(SystemExit):
+        cli(['cleanup-audio','--backup',str(database / 'not-created.sqlite')])
+    assert not (database / 'not-created.sqlite').exists()
+
+
+def test_failed_backup_verification_never_cleans_audio(database, monkeypatch):
+    from app.db_cli import cleanup_audio
+    seed()
+    with db.connection() as conn:
+        conn.execute('UPDATE hive_logs SET audio_bytes=?', (b'legacy audio',))
+    original = db.backup_database
+    def changed_copy(destination):
+        original(destination)
+        with sqlite3.connect(destination) as conn:
+            conn.execute("UPDATE hive_logs SET raw_transcript='different'")
+    monkeypatch.setattr(db, 'backup_database', changed_copy)
+    with pytest.raises(RuntimeError, match='changed since backup'):
+        cleanup_audio(database / 'bad-backup.sqlite')
+    assert db.query('SELECT audio_bytes FROM hive_logs')[0]['audio_bytes'] == b'legacy audio'

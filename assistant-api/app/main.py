@@ -20,7 +20,9 @@ from starlette.background import BackgroundTask
 from app import db
 from app.db import (get_hive, get_stats_summary, list_hive_dashboard,
                     list_hive_inspections, list_recent_inspections, list_recent_logs)
-from app.pipeline import process_log, response_for_log
+from app.pipeline import build_review, process_log, read_review, response_for_log
+from app.schemas import HiveRename, InspectionCorrection, ReviewConfirmation
+from app.review_fields import LABELS, GROUPS, COMPACT, FLAGS, field_spec
 
 logger = logging.getLogger(__name__)
 BASE_DIR = os.path.dirname(__file__)
@@ -52,6 +54,7 @@ async def lifespan(app):
 
 app = FastAPI(title="Yard Assistant", lifespan=lifespan)
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+templates.env.globals.update(field_labels=LABELS, field_groups=GROUPS, compact_fields=COMPACT, flag_fields=FLAGS)
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 
@@ -151,6 +154,11 @@ def export_sqlite():
         path = tmp.name
     try:
         db.backup_database(path)
+        with sqlite3.connect(path) as snapshot:
+            snapshot.execute("PRAGMA secure_delete=ON")
+            snapshot.execute("UPDATE hive_logs SET audio_bytes=NULL, audio_content_type=NULL")
+            snapshot.commit()
+            snapshot.execute("VACUUM")
     except Exception:
         os.unlink(path)
         raise
@@ -161,14 +169,10 @@ def export_sqlite():
 def run_saved_log(log_id):
     try:
         result = process_log(log_id)
-    except db.ProcessingBusy:
-        return JSONResponse(status_code=409, content={"id": log_id, "status": "pending",
-                            "error": {"code": "processing_busy", "message": "This transcript is already processing"}})
     except sqlite3.Error:
         return JSONResponse(status_code=503, content={"id": log_id, "status": "failed",
                             "error": {"code": "persistence_error", "message": "Transcript saved; could not start processing"}})
-    status = 503 if result.get("error", {}) and result["error"]["code"] == "status_persistence_error" else 200
-    return JSONResponse(status_code=status, content=result)
+    return result
 
 
 @app.post("/api/voice")
@@ -182,6 +186,7 @@ def voice(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Empty audio upload")
     if len(audio) > 32 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Audio upload exceeds 32 MiB")
+    file.file.close()
     # Fixed temporary suffix; uploaded filenames never become filesystem paths.
     with tempfile.NamedTemporaryFile(suffix=".audio") as tmp:
         tmp.write(audio)
@@ -195,23 +200,13 @@ def voice(file: UploadFile = File(...)):
         whisper_ms = (perf_counter() - transcribing) * 1000
     if not transcript.strip():
         raise HTTPException(status_code=400, detail="Could not transcribe audio; no record was saved")
-    saving = perf_counter()
-    try:
-        log_id = db.save_raw_hive_log(transcript, audio_bytes=audio, audio_content_type=file.content_type,
-                                      metadata={"duration_ms": round(whisper_ms, 3), "model": WHISPER_MODEL,
-                                                "language": getattr(info, "language", None)})
-    except sqlite3.Error:
-        raise HTTPException(status_code=503, detail="Transcript could not be saved; retain audio and retry")
-    raw_persistence_ms = (perf_counter() - saving) * 1000
-    response = run_saved_log(log_id)
-    # 201 means source created, processing failed; body always carries explicit statuses.
-    if response.status_code == 200 and json.loads(response.body)["status"] != "completed":
-        response.status_code = 201
-    logger.info(json.dumps({"event": "voice", "log_id": log_id, "whisper_ms": round(whisper_ms, 3),
-                            "status": json.loads(response.body).get("status"),
-                            "raw_persistence_ms": round(raw_persistence_ms, 3),
+    del audio
+    result = build_review(transcript, metadata={"duration_ms": round(whisper_ms, 3),
+                          "model": WHISPER_MODEL, "language": getattr(info, "language", None)})
+    logger.info(json.dumps({"event": "voice_review", "whisper_ms": round(whisper_ms, 3),
+                            "extraction_status": result["extraction_status"],
                             "total_ms": round((perf_counter() - started) * 1000, 3)}))
-    return response
+    return result
 
 
 @app.get("/api/logs/{log_id}")
@@ -251,9 +246,65 @@ def reprocess(log_id: int):
 
 
 @app.post("/api/inspections/{inspection_id}/confirm")
-def confirm(inspection_id: int):
+def confirm(inspection_id: int, body: InspectionCorrection | None = None):
     try:
-        db.confirm_inspection(inspection_id)
+        db.confirm_inspection(inspection_id, body)
     except KeyError:
         raise HTTPException(status_code=404, detail="Inspection not found")
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Existing inspection has an invalid hive ID or date")
+    except sqlite3.Error:
+        raise HTTPException(status_code=503, detail="Confirmation failed; retry")
     return {"inspection_id": inspection_id, "confirmation_status": "confirmed"}
+
+
+@app.get("/api/hives")
+def hive_choices():
+    return db.query("SELECT hive_id,name FROM hives WHERE upper(hive_id) != 'UNKNOWN' ORDER BY hive_id")
+
+
+@app.patch("/api/hives/{hive_id}")
+def rename(hive_id: str, body: HiveRename):
+    try:
+        db.rename_hive(hive_id, body.name)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Hive not found")
+    except sqlite3.Error:
+        raise HTTPException(status_code=503, detail="Name could not be saved; retry")
+    return db.get_hive(hive_id)
+
+
+@app.post("/api/reviews/confirm")
+def confirm_review(body: ReviewConfirmation):
+    try:
+        source = read_review(body.review_token)
+        inspection_id = db.save_review(source, body)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except sqlite3.Error:
+        raise HTTPException(status_code=503, detail="Nothing saved; keep this card open and retry confirmation")
+    inspection = db.query("SELECT * FROM inspections WHERE inspection_id=?", (inspection_id,))[0]
+    return {"inspection_id": inspection_id, "id": inspection["raw_log_id"], "confirmation_status": "confirmed"}
+
+
+@app.put("/api/inspections/{inspection_id}")
+def correct_inspection(inspection_id: int, body: InspectionCorrection):
+    try:
+        db.update_inspection(inspection_id, body)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Confirmed inspection not found")
+    except sqlite3.Error:
+        raise HTTPException(status_code=503, detail="Changes could not be saved; keep this card open and retry")
+    return db.query("SELECT * FROM inspections WHERE inspection_id=?", (inspection_id,))[0]
+
+
+@app.get('/api/inspection-fields')
+def inspection_fields():
+    return field_spec()
+
+
+@app.middleware("http")
+async def no_persistent_review_cache(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-store"
+    return response

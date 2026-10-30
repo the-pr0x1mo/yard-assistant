@@ -1,101 +1,38 @@
 # Architecture
 
-Yard Assistant is a self-hosted, voice-first beekeeping logbook. It uses a server-side rendered UI for simple dashboard pages and a local AI pipeline for converting audio notes into structured inspection records.
+Yard Assistant is a self-hosted voice logbook using FastAPI, Jinja2, browser
+JavaScript, local Whisper/Ollama and the existing SQLite v2 database.
+See [YA-02](ya-02.md) for current behavior and operating instructions.
 
-The current lifecycle and schema are documented in [YA-01](ya-01.md).
-The diagram below is conceptual; durable source storage occurs **before** Ollama.
-
-## High-Level Architecture
-
-![Yard Assistant architecture](./architecture-diagram.png)
-
-GET requests render dashboard pages server-side using FastAPI, SQLite, and Jinja2.
-
-POST requests upload audio notes to FastAPI. The backend passes audio to Whisper for transcription, sends the transcript to Ollama for structured extraction, validates the result with Pydantic, and stores both raw and structured records in SQLite.
-
-The MVP treats the raw transcript as the source of truth. The raw audit log is
-written first, and the normalized inspection insert is best effort. This keeps
-the original spoken note available even when structured extraction fails or
-produces invalid data.
-
-## Request Flow
-
-For a step-by-step walkthrough of the ingestion flow, see [Life of a Voice Log](life-of-a-voice-log.md).
-
-### Dashboard / Read Flow
-
-```text
-Phone / Browser
-    |
-    | HTTPS via Tailscale
-    v
-FastAPI App
-    |
-    | SQL query
-    v
-SQLite
-    |
-    | query results
-    v
-FastAPI App
-    |
-    | render template
-    v
-Jinja2 UI
-    |
-    | rendered HTML response
-    v
-Phone / Browser
+```mermaid
+flowchart TD
+  Browser[Browser recording / upload] --> Whisper[Whisper: temporary audio]
+  Whisper --> Text[Original transcript in memory]
+  Text --> Ollama[One factual extraction attempt]
+  Ollama --> Review[Ephemeral review card / manual entry]
+  Review -->|Discard or navigate| Lost[Unsaved card lost]
+  Review -->|Explicit confirmation| Transaction[Validate and commit one SQLite transaction]
+  Transaction --> Source[Original transcript: no audio]
+  Transaction --> Attempt[Actual extraction outcome]
+  Transaction --> Facts[Approved inspection and hive]
+  Facts --> Dashboard[Confirmed dashboard / history / exports]
+  Dashboard --> Correction[Correct same inspection ID]
+  Correction --> Facts
 ```
 
-### Voice / Write Flow
+No transaction spans a model request. Signed review content is kept only in the
+active browser page; there is no durable draft or server session store.
+`BEGIN IMMEDIATE` serializes idempotency lookup and confirmation writes. Confirmed
+facts can be corrected; original transcript and inspection/hive/source IDs cannot.
 
-```text
-Phone / Browser
-    |
-    | audio upload via HTTPS / Tailscale
-    v
-FastAPI App
-    |
-    | audio file
-    v
-Whisper STT
-    |
-    | transcript text
-    v
-SQLite: commit source audio + transcript
-    |
-    v
-Ollama / Llama
-    |
-    | structured JSON
-    v
-Pydantic Validation
-    |
-    | validated structured data
-    v
-SQLite
-```
-For a step-by-step walkthrough of the ingestion flow, see [Life of a Voice Log](life-of-a-voice-log.md).
+Jinja2 renders persisted dashboard/history cards; the shared browser editor
+renders temporary reviews and edits confirmed records. Pydantic defines the
+factual validation contract; presentation labels and grouping stay separate.
 
-## Component Responsibilities
+SQLite tables, constraints and version remain unchanged. Application queries
+filter approved records instead of changing the legacy latest-inspection view.
+Existing YA-01 records are preserved for explicit review. Startup only verifies
+schema compatibility, with no automatic initialization, migration or cleanup.
 
-| Component | Responsibility |
-|---|---|
-| FastAPI | API and server-side rendered backend |
-| Jinja2 | HTML template rendering |
-| Whisper STT | Audio-to-text transcription |
-| Ollama / Llama | Local LLM-based structured extraction |
-| Pydantic | Schema validation and data normalization |
-| SQLite | Stores raw logs and structured inspection data |
-| Tailscale | Secure HTTPS access for browser microphone support |
-
-## Data Reliability Notes
-
-- `hive_logs` preserves source audio, the raw transcript and processing statuses for audit and
-  recovery.
-- `extraction_attempts` preserves model responses and validated candidates;
-  `inspections` stores the committed factual observations with explicit source linkage.
-- Structured extraction is experimental, especially for Serbian beekeeping
-  terminology, so downstream views should treat normalized fields as editable or
-  reviewable data rather than guaranteed facts.
+The earlier PNG/drawio diagrams in this folder describe historical infrastructure;
+the flow above is authoritative for current persistence behavior.

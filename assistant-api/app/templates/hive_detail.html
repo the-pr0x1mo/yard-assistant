@@ -21,41 +21,23 @@
   {% endif %}
 </section>
 
-<section class="card">
-  <h2>Recent Inspections</h2>
-  {% if inspections %}
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Inspected At</th>
-          <th>Type</th>
-          <th>Strength</th>
-          <th>Reserves</th>
-          <th>Actions taken</th>
-          <th>Brood frames</th>
-          <th>Review</th>
-          <th>Note</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in inspections %}
-        <tr>
-          <td>{{ item.inspected_at or "-" }}</td>
-          <td>{{ item.inspection_type or "-" }}</td>
-          <td>{{ item.beekeeper_strength or "-" }}</td>
-          <td>{{ item.reserves_estimate or "-" }}</td>
-          <td>{{ item.actions_taken or "-" }}</td>
-          <td>{{ item.brood_frames if item.brood_frames is not none else "-" }}</td>
-          <td><a href="/logs/{{ item.raw_log_id }}">{{ item.confirmation_status }}</a></td>
-          <td>{{ item.note or "-" }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <p>No inspections found for this hive.</p>
-  {% endif %}
-</section>
+<h2>Potvrđeni pregledi</h2>
+{% include "inspection_cards.html" %}
+{% if hive %}
+<section class="card"><form id="rename-hive" class="form-stack">
+<label>Naziv košnice <input id="hive-name" maxlength="200" value="{{ hive.name or '' }}"></label>
+<p>ID: {{ hive.hive_id }} (nepromenljiv)</p><button>Sačuvaj naziv</button><p role="status" id="rename-status"></p>
+</form></section>
+<script>
+document.getElementById('rename-hive').onsubmit = async event => {
+  event.preventDefault();
+  const status = document.getElementById('rename-status');
+  try {
+    const response = await fetch('/api/hives/' + encodeURIComponent({{ hive.hive_id | tojson }}), {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:document.getElementById('hive-name').value || null})});
+    if (!response.ok) throw new Error('Naziv nije sačuvan. Pokušajte ponovo.');
+    location.reload();
+  } catch (error) { status.textContent = error.message; }
+};
+</script>
+{% endif %}
 {% endblock %}
