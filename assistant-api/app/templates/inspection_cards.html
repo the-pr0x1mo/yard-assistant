@@ -1,33 +1,43 @@
+{% macro fact_tile(item, key) %}
+  {% set value_labels = {'pljacka': 'pljačka', 'rastrkano': 'raštrkano', 'kriticno': 'kritično', 'visak': 'višak', 'previse': 'previše', 'zapoceti': 'započeti', 'teska': 'teška', 'vrlo_teska': 'vrlo teška', 'veoma_jako': 'veoma jako'} %}
+  <div class="inspection-field{% if key in ['note', 'actions_taken'] %} inspection-field-wide inspection-field-note{% endif %}">
+    <dt>{{ field_labels[key] }}</dt>
+    <dd class="inspection-value{% if item[key] is none %} value-unknown{% endif %}">{% if key in flag_fields %}{{ 'Nepoznato' if item[key] is none else 'Da' if item[key] == 1 else 'Ne' }}{% else %}{{ value_labels.get(item[key], item[key]) if item[key] is not none else 'Nepoznato' }}{% endif %}</dd>
+  </div>
+{% endmacro %}
 {% for item in inspections %}
 <article class="card review-card">
   <div class="review-header">
-    <h3>{{ item.hive_name or 'Košnica' }}</h3>
+    <h3>Pregled #{{ item.inspection_id }}</h3>
     <span class="badge badge-good">Potvrđeno</span>
   </div>
-  <p class="review-caption">ID: {{ item.hive_id }} · nepromenljiv<br>Datum pregleda: {{ item.inspected_at }} UTC</p>
-  <dl class="inspection-note">
-    <dt>{{ field_labels['note'] }}</dt>
-    <dd{% if item.note is none %} class="value-unknown"{% endif %}>{{ item.note if item.note is not none else 'Nepoznato' }}</dd>
-  </dl>
-  <dl class="review-grid inspection-metrics">
-  {% for key in compact_fields %}
-    {% if key != 'note' %}
-    <div>
-    <dt>{{ field_labels[key] }}</dt>
-    <dd{% if item[key] is none %} class="value-unknown"{% endif %}>{% if key in flag_fields %}{{ 'Nepoznato' if item[key] is none else 'Da' if item[key] == 1 else 'Ne' }}{% else %}{{ item[key] if item[key] is not none else 'Nepoznato' }}{% endif %}</dd>
-    </div>
-    {% endif %}
-  {% endfor %}
-  </dl>
+  <section>
+    <h4 class="inspection-section-title">Osnovni pregled</h4>
+    <dl class="inspection-fields-grid">
+      <div class="inspection-field">
+        <dt>Datum i vreme pregleda · UTC</dt>
+        <dd class="inspection-value">{{ item.inspected_at }} UTC</dd>
+      </div>
+      <div class="inspection-field">
+        <dt>Naziv košnice</dt>
+        <dd class="inspection-value{% if not item.hive_name %} value-unknown{% endif %}">{{ item.hive_name or 'Bez naziva' }}</dd>
+      </div>
+      <div class="inspection-field">
+        <dt>ID košnice · nepromenljiv</dt>
+        <dd class="inspection-value">{{ item.hive_id }}</dd>
+      </div>
+      {% for key in compact_fields %}{{ fact_tile(item, key) }}{% endfor %}
+    </dl>
+  </section>
   <details class="review-details"><summary>Sva polja i originalni transkript</summary>
   {% for group, keys in field_groups.items() %}
-    <section class="review-group"><h4>{{ group }}</h4><dl class="kv">
-    {% for key in keys %}
-      <dt>{{ field_labels[key] }}</dt>
-      <dd{% if item[key] is none %} class="value-unknown"{% endif %}>{% if key in flag_fields %}{{ 'Nepoznato' if item[key] is none else 'Da' if item[key] == 1 else 'Ne' }}{% else %}{{ item[key] if item[key] is not none else 'Nepoznato' }}{% endif %}</dd>
-    {% endfor %}</dl></section>
+    <details class="review-group"><summary>{{ 'Radnje i beleške' if group == 'Preduzete radnje' else group }}</summary>
+      <dl class="inspection-fields-grid">
+        {% for key in keys %}{{ fact_tile(item, key) }}{% endfor %}
+      </dl>
+    </details>
   {% endfor %}
-  <section class="review-transcript"><h4>Originalni Whisper transkript</h4><p class="review-caption muted">Samo čitanje · izvorni tekst ostaje neizmenjen.</p><pre>{{ item.raw_transcript }}</pre></section>
+    <details class="review-group review-transcript"><summary>Originalni Whisper transkript</summary><p class="review-caption muted">Samo čitanje · izvorni tekst ostaje neizmenjen.</p><pre>{{ item.raw_transcript }}</pre></details>
   </details>
   <a class="review-edit-link" href="/logs/{{ item.raw_log_id }}">Uredi pregled #{{ item.inspection_id }}</a>
 </article>

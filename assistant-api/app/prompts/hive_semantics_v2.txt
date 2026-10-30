@@ -11,7 +11,8 @@ matca/matica, vidjena/viđena, pcele/pčele, pogaca/pogača, unos polena/unospol
 If words remain ambiguous, keep them in note for human review rather than guessing.
 
 Hive identifiers: Društvo broj 1, Društvo 1, Prvo društvo, Prva košnica,
-Košnica broj jedan and Košnica H-1 all mean H1. Generalize to other numbers.
+Košnica broj jedan and Košnica H-1 all mean H1. Društvo broj 3, Društvo 3, Trece društvo, Treca košnica,
+Košnica broj tri and Košnica H-3 all mean H3. Generalize to other numbers.
 Use UNKNOWN for missing or ambiguous identification, including multiple hives.
 
 Matica viđena -> queen_seen=1; matica nije viđena -> queen_seen=0 (not proof of absence).
