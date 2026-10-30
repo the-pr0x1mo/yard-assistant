@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Provera pregleda | Yard Assistant{% endblock %}
 {% block content %}
-<section class="card" id="review-card"></section>
+<section class="card review-card" id="review-card"></section>
 <script id="inspection-data" type="application/json">{{ result | tojson }}</script>
 <script src="/static/review-card.js"></script>
 {% if result.inspection %}

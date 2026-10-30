@@ -3,7 +3,7 @@
 {% block content %}
 <section class="card">
   <h2>Otpremi glasovnu belešku</h2>
-  <p>Audio se koristi privremeno. Podaci se čuvaju tek kada potvrdite pregled.</p>
+  <p class="muted workflow-intro">Audio se koristi privremeno. Podaci se čuvaju tek kada potvrdite pregled.</p>
   <form id="voice-upload" class="form-stack">
     <label for="file">Audio datoteka (do 32 MiB)</label>
     <input id="file" name="file" type="file" accept="audio/*" required>
@@ -11,7 +11,7 @@
   </form>
   <p id="upload-status" role="status"></p>
 </section>
-<section class="card" id="review-card" aria-live="polite"></section>
+<section class="card review-card" id="review-card" aria-live="polite"></section>
 <script src="/static/review-card.js"></script>
 <script>
 (() => {

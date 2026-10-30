@@ -3,29 +3,21 @@
 {% block title %}Home | Yard Assistant{% endblock %}
 
 {% block content %}
-<section class="card">
-  <h2>Welcome</h2>
-  <p>
-    Snimite pregled, proverite izdvojene podatke i izričito potvrdite čuvanje.
-  </p>
-</section>
-
 <section class="card record-card">
-  <h2>Record Log Entry</h2>
-  <p>Record from your browser microphone and send directly to <code>/api/voice</code>.</p>
+  <h2>Novi pregled</h2>
+  <p class="muted workflow-intro">Snimite belešku, proverite podatke i potvrdite pregled.</p>
   <div class="record-controls">
     <button id="record-start" type="button">Start recording</button>
     <button id="record-stop" type="button" disabled>Stop</button>
     <button id="record-send" type="button" disabled>Send to API</button>
   </div>
-  <p id="record-status" class="muted">Idle</p>
-  <!-- <details id="record-result-wrap">
-    <summary>API response</summary>
-    <pre id="record-result"></pre>
-  </details> -->
+  <p id="record-status" class="muted" role="status">Idle</p>
 </section>
 
+<section class="card review-card" id="review-card" aria-live="polite"></section>
 
+<details class="home-secondary">
+<summary>Podaci, istorija i izvoz</summary>
 <section class="card">
   <h2>Data export</h2>
 
@@ -57,16 +49,8 @@
   </a>
 </section>
 
-<section class="card">
-  <h2>API Endpoints</h2>
-  <ul>
-    <li><code>GET /health</code></li>
-    <li><code>POST /voice</code></li>
-    <li><code>POST /api/voice</code></li>
-  </ul>
-</section>
+</details>
 
-<section class="card" id="review-card" aria-live="polite"></section>
 <script src="/static/review-card.js"></script>
 <script>
   (() => {
