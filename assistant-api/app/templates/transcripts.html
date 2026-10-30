@@ -11,8 +11,11 @@
 {% if logs %}
   {% for item in logs %}
   <section class="card">
-    <h3>Log #{{ item.id }} · Hive {{ item.hive_id }}</h3>
+    <h3>Log #{{ item.id }} · Hive {{ item.hive_id or "UNKNOWN" }}</h3>
     <p class="muted">{{ item.created_at }}</p>
+    <p>Extraction: {{ item.extraction_status }} · Persistence: {{ item.normalization_status }} · Review: {{ item.confirmation_status or 'not available' }}</p>
+    {% if item.error_code %}<p role="alert">{{ item.error_code }}: {{ item.error_message }}</p>{% endif %}
+    <a href="/logs/{{ item.id }}">Review log and processing attempts</a>
     <h4>Transcript</h4>
     <pre>{{ item.raw_transcript }}</pre>
     <details>

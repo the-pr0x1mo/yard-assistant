@@ -1,16 +1,36 @@
+-- Schema v2: explicit initialization only. No automatic legacy migration.
 PRAGMA foreign_keys = ON;
-
--- Raw audit trail table preserved for MVP compatibility.
-CREATE TABLE IF NOT EXISTS hive_logs (
-  id                INTEGER PRIMARY KEY AUTOINCREMENT,
-  created_at        TEXT NOT NULL,
-  hive_id           TEXT NOT NULL,
-  data_json         TEXT NOT NULL,
-  raw_transcript    TEXT NOT NULL
+BEGIN IMMEDIATE;
+CREATE TABLE hive_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at TEXT NOT NULL,
+  raw_transcript TEXT NOT NULL CHECK (length(trim(raw_transcript)) > 0),
+  audio_bytes BLOB,
+  audio_content_type TEXT,
+  whisper_metadata_json TEXT NOT NULL DEFAULT '{}' CHECK (json_valid(whisper_metadata_json)),
+  extraction_status TEXT NOT NULL DEFAULT 'pending' CHECK (extraction_status IN ('pending','completed','failed')),
+  normalization_status TEXT NOT NULL DEFAULT 'pending' CHECK (normalization_status IN ('pending','completed','failed')),
+  error_code TEXT,
+  error_message TEXT
 );
 
--- 1) Master tabela: kosnice
-CREATE TABLE IF NOT EXISTS hives (
+CREATE TABLE extraction_attempts (
+  attempt_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  raw_log_id INTEGER NOT NULL REFERENCES hive_logs(id),
+  started_at TEXT NOT NULL,
+  finished_at TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','completed','failed')),
+  extraction_status TEXT NOT NULL DEFAULT 'pending' CHECK (extraction_status IN ('pending','completed','failed')),
+  normalization_status TEXT NOT NULL DEFAULT 'pending' CHECK (normalization_status IN ('pending','completed','failed')),
+  model_response TEXT,
+  payload_json TEXT CHECK (payload_json IS NULL OR json_valid(payload_json)),
+  metadata_json TEXT NOT NULL DEFAULT '{}' CHECK (json_valid(metadata_json)),
+  error_code TEXT,
+  error_message TEXT
+);
+CREATE UNIQUE INDEX one_active_attempt ON extraction_attempts(raw_log_id) WHERE status = 'pending';
+
+CREATE TABLE hives (
   hive_id           TEXT PRIMARY KEY,
   name              TEXT,
   hive_type         TEXT,
@@ -20,15 +40,17 @@ CREATE TABLE IF NOT EXISTS hives (
 );
 
 -- 2) Inspekcije
-CREATE TABLE IF NOT EXISTS inspections (
+CREATE TABLE inspections (
   inspection_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  raw_log_id         INTEGER NOT NULL UNIQUE REFERENCES hive_logs(id),
+  extraction_attempt_id INTEGER NOT NULL UNIQUE REFERENCES extraction_attempts(attempt_id),
   hive_id            TEXT NOT NULL,
-  inspected_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  inspected_at       TEXT NOT NULL,
   temperature_c      REAL,
 
   days_since_last_inspection INTEGER CHECK (days_since_last_inspection >= 0),
 
-  inspection_type    TEXT NOT NULL
+  inspection_type    TEXT
                      CHECK (inspection_type IN ('spoljni','brzi','potpuni')),
 
   flight_activity    INTEGER CHECK (flight_activity BETWEEN 0 AND 5),
@@ -69,16 +91,16 @@ CREATE TABLE IF NOT EXISTS inspections (
   humidity_issue     INTEGER CHECK (humidity_issue IN (0,1)),
 
   beekeeper_strength TEXT CHECK (beekeeper_strength IN ('slabo','srednje','jako','veoma_jako')),
-  ready_for_flow     INTEGER CHECK (ready_for_flow IN (0,1)),
-  ready_for_winter   INTEGER CHECK (ready_for_winter IN (0,1)),
-  recommended_action TEXT CHECK (recommended_action IN ('nista','prihrana','prosirenje','spajanje','kontrola_rojenja','tretman')),
+  actions_taken      TEXT,
   note               TEXT,
 
-  raw_transcript     TEXT,
+  confirmation_status TEXT NOT NULL DEFAULT 'unreviewed'
+    CHECK (confirmation_status IN ('unreviewed','confirmed')),
+  confirmed_at       TEXT,
 
   created_at         TEXT NOT NULL DEFAULT (datetime('now')),
 
-  FOREIGN KEY (hive_id) REFERENCES hives(hive_id) ON DELETE CASCADE
+  FOREIGN KEY (hive_id) REFERENCES hives(hive_id) ON DELETE RESTRICT
 );
 
 CREATE INDEX IF NOT EXISTS idx_inspections_hive_time
@@ -87,72 +109,15 @@ CREATE INDEX IF NOT EXISTS idx_inspections_hive_time
 CREATE INDEX IF NOT EXISTS idx_inspections_type_time
   ON inspections (inspection_type, inspected_at DESC);
 
--- 3) Metrike
-CREATE TABLE IF NOT EXISTS inspection_metrics (
-  metrics_id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  inspection_id      INTEGER NOT NULL UNIQUE,
 
-  strength_score     REAL CHECK (strength_score BETWEEN 0 AND 100),
-  bagrem_readiness   REAL CHECK (bagrem_readiness BETWEEN 0 AND 100),
-  food_score         REAL CHECK (food_score BETWEEN 0 AND 100),
-
-  swarm_risk         TEXT CHECK (swarm_risk IN ('low','med','high')),
-  queen_status       TEXT CHECK (queen_status IN ('ok','suspect','missing','unknown')),
-  confidence         TEXT CHECK (confidence IN ('low','med','high')),
-
-  actions_json       TEXT,
-  computed_at        TEXT NOT NULL DEFAULT (datetime('now')),
-
-  FOREIGN KEY (inspection_id) REFERENCES inspections(inspection_id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_metrics_computed_at
-  ON inspection_metrics (computed_at DESC);
-
--- 4) View: poslednje stanje po kosnici
-DROP VIEW IF EXISTS v_hive_latest;
-CREATE VIEW IF NOT EXISTS v_hive_latest AS
-SELECT
-  h.hive_id,
-  h.name,
-  i.inspection_id,
-  i.inspected_at,
-  i.days_since_last_inspection,
-  i.inspection_type,
-  i.beekeeper_strength,
-  i.reserves_estimate,
-  i.queen_seen,
-  i.recommended_action,
-  m.strength_score,
-  m.bagrem_readiness,
-  m.food_score,
-  m.swarm_risk,
-  m.queen_status,
-  m.confidence
+CREATE VIEW v_hive_latest AS
+SELECT h.hive_id, h.name, i.inspection_id, i.raw_log_id, i.inspected_at,
+       i.inspection_type, i.beekeeper_strength, i.reserves_estimate,
+       i.queen_seen, i.actions_taken, i.confirmation_status
 FROM hives h
-LEFT JOIN inspections i
-  ON i.inspection_id = (
-    SELECT i2.inspection_id
-    FROM inspections i2
-    WHERE i2.hive_id = h.hive_id
-    ORDER BY i2.inspected_at DESC
-    LIMIT 1
-  )
-LEFT JOIN inspection_metrics m
-  ON m.inspection_id = i.inspection_id;
-
--- 5) View: automatski izracunato vreme od prethodne inspekcije
-CREATE VIEW IF NOT EXISTS v_inspections_with_prev_gap AS
-SELECT
-  i.*,
-  CAST(
-    julianday(i.inspected_at) -
-    julianday((
-      SELECT MAX(i2.inspected_at)
-      FROM inspections i2
-      WHERE i2.hive_id = i.hive_id
-        AND i2.inspected_at < i.inspected_at
-    ))
-    AS INTEGER
-  ) AS computed_days_since_previous
-FROM inspections i;
+LEFT JOIN inspections i ON i.inspection_id = (
+ SELECT inspection_id FROM inspections WHERE hive_id = h.hive_id
+ ORDER BY inspected_at DESC, inspection_id DESC LIMIT 1
+);
+PRAGMA user_version = 2;
+COMMIT;

@@ -29,9 +29,11 @@ try to turn that transcript into useful structured records.
 - Local speech-to-text transcription with Whisper
 - Local LLM-based extraction through Ollama
 - Raw transcript storage as an audit trail
-- Best-effort normalized inspection records in SQLite
+- Strict factual extraction with visible failure states and linked SQLite records
+- Source audio, original transcripts and extraction attempt history
+- Review and confirmation of extracted facts
 - Server-rendered dashboard pages for hives, inspections, transcripts, and stats
-- CSV, JSON, and SQLite export endpoints
+- Historical inspection CSV, latest-hive CSV, complete JSON and SQLite snapshots
 
 ## Architecture
 
@@ -60,6 +62,14 @@ Raw transcript storage is currently the most reliable and important part of the
 MVP. Even when structured extraction is incomplete or wrong, the original spoken
 note remains available and attached to the detected hive record.
 
+## YA-01 development setup
+
+See [the extraction and database guide](docs/ya-01.md) for the v2 factual contract,
+explicit database initialization, deterministic test-data seed, separate development
+reset, tests, deployment and rollback. Startup never initializes, migrates or resets
+a database. Legacy synthetic schemas are refused until the operator selects a new
+v2 database or performs an explicit backed-up development reset.
+
 ## Running locally
 
 See [docs/deployment.md](docs/deployment.md) and
@@ -75,10 +85,10 @@ Current limitations:
 - Serbian beekeeping terminology is not reliably recognized or normalized yet.
 - Hive and colony names should be spoken consistently for best results.
 - Structured fields may be incomplete, incorrect, or low confidence.
-- There is no review/confirm step before saving normalized inspection data.
+- Extracted inspections start unreviewed; confirmation is available, field editing is deferred.
 - Authentication is expected to be handled by the deployment environment, such
   as tailnet access.
-- Automated tests are not yet in place.
+- Deterministic tests mock Whisper/Ollama; live-model accuracy still needs manual checks.
 
 ## Roadmap
 

@@ -18,7 +18,7 @@
         <th>Strength</th>
         <th>Food</th>
         <th>Queen</th>
-        <th>Action</th>
+        <th>Review</th>
       </tr>
     </thead>
     <tbody>
@@ -53,8 +53,8 @@
           {% endif %}
         </td>
         <td>
-          {% if hive.recommended_action %}
-          <span class="badge badge-neutral">{{ hive.recommended_action }}</span>
+          {% if hive.raw_log_id %}
+          <a href="/logs/{{ hive.raw_log_id }}">{{ hive.confirmation_status }}</a>
           {% else %}
           <span class="muted">—</span>
           {% endif %}
